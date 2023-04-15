@@ -1,0 +1,31 @@
+"General Policy"
+"    Cite our paper indicated below (*1) when Users present their results using the data downloaded from this website in scientific papers, reports, or abstracts of meetings."
+"    Follow the individual policy for each catalog."
+"    Users owe any responsibility in using the data downloaded from this website."
+"    Catalogs on this website can be updated or modified (for example, due to the modification of the analyzing method) without any notification of Users."
+"    Specify the acknowledgement to "Science of Slow Earthquakes" (JSPS Grant-in-Aid for Scientific Research on Innovative Areas) as indicated below (*2)."
+"    We strictly prohibit any commercial use of the data provided in this website."
+"    Do not redistribute or share the data downloaded from this website."
+"    (*1) Kano, M., Aso, N., Matsuzawa, T., Ide, S., Annoura, S., Arai, R., Baba, S., Bostock, M., Chao, K., Heki, K., Itaba, S., Ito, Y., Kamaya, N., Maeda, T., Maury, J., Nakamura, M., Nishimura, T., Obana, K., Ohta, K., Poiata, N., Rousset, B., Sugioka, H., Takagi, R., Takahashi, T., Takeo, A., Tu, Y., Uchida, N., Yamashita, Y., & Obara, K. (2018). Development of a Slow Earthquake Database, Seismological Research Letters, 89 (4), 1566-1575, https://doi.org/10.1785/0220180021."
+"    (*2) Acknowledgments should be described in the following example:"
+"        This research was supported by JSPS KAKENHI Grant Number JP16H06472 in Scientific Research on Innovative Areas "Science of Slow Earthquakes"."
+"    If the research was conducted by the group members of our project, add each grant number of JSPS KAKENHI."
+"  "
+"Okada2022a-SSE"
+"    Users cite the following paper when using the data downloaded from this website."
+"      Okada, Y., Nishimura, T., Tabei, T. et al. (2022). Development of a detection method for short-term slow slip events using GNSS data and its application to the Nankai subduction zone. Earth Planets Space 74, 18. https://doi.org/10.1186/s40623-022-01576-8."
+"    Notices:"
+"      Covered Period: from February 1997 to January 2020"
+"      The reference date is the center day of the duration."
+"      This catalog records class 1 SSEs. The criteria for the categorization are described in the original paper."
+"  "
+year,month,day,hour,min,sec,lat,lon,dep,mag,catalog,ref,udate
+2008,11,12,  ,  ,     ,34.81000,137.05499,  23.861, 6.02,Okada2022a-SSE,Okada et al. (2022),2022-04-05
+2008,10,16,  ,  ,     ,33.75500,134.05400,  24.545, 5.90,Okada2022a-SSE,Okada et al. (2022),2022-04-05
+2008, 9,30,  ,  ,     ,33.54700,132.87801,  28.665, 5.96,Okada2022a-SSE,Okada et al. (2022),2022-04-05
+2008, 6,20,  ,  ,     ,34.46300,136.51100,  30.990, 6.00,Okada2022a-SSE,Okada et al. (2022),2022-04-05
+2008, 5,15,  ,  ,     ,34.99700,137.58800,  29.198, 5.85,Okada2022a-SSE,Okada et al. (2022),2022-04-05
+2008, 3,17,  ,  ,     ,33.62700,133.03799,  28.504, 5.98,Okada2022a-SSE,Okada et al. (2022),2022-04-05
+2008, 3, 5,  ,  ,     ,34.88700,136.96001,  27.278, 5.89,Okada2022a-SSE,Okada et al. (2022),2022-04-05
+2008, 2,14,  ,  ,     ,33.78900,134.23801,  23.703, 5.89,Okada2022a-SSE,Okada et al. (2022),2022-04-05
+
