@@ -345,6 +345,98 @@ class Catalog:
         raise NotImplementedError
 
 
+class EarthquakeCatalog(Catalog):
+    def __init__(
+        self,
+        filename: str = None,
+        use_other_catalog: bool = False,
+        kwargs: dict = None,
+        other_catalog: Catalog = None,
+        other_catalog_buffer: float = 0.0,
+    ) -> Catalog:
+
+        if kwargs is None:
+            kwargs = {}
+
+        if use_other_catalog and other_catalog is not None:
+            metadata = {
+                "starttime": other_catalog.start_time,
+                "endtime": other_catalog.end_time,
+                "latitude_range": other_catalog.latitude_range
+                + np.array([-1, 1]) * other_catalog_buffer,
+                "longitude_range": other_catalog.longitude_range
+                + np.array([-1, 1]) * other_catalog_buffer,
+            }
+            metadata.update(kwargs)
+        elif not use_other_catalog:
+            metadata = kwargs
+        else:
+            raise ValueError("No other catalog provided")
+
+        _catalog = self.get_and_save_catalog(filename, **metadata)
+        self.catalog = self._add_time_column(_catalog, "time")
+
+        super().__init__(self.catalog)
+
+    @staticmethod
+    def _add_time_column(df, column):
+        """
+        Adds a column to a dataframe with the time in days since the beginning of the year.
+        """
+        df[column] = pd.to_datetime(pd.to_datetime(df["time"], unit="d"))
+        return df
+
+    @staticmethod
+    def get_and_save_catalog(
+        filename: str = "_temp_local_catalog.csv",
+        starttime: str = "2019-01-01",
+        endtime: str = "2020-01-01",
+        latitude_range: list[float, float] = [-90, 90],
+        longitude_range: list[float, float] = [-180, 180],
+        minimum_magnitude: float = 4.5,
+    ) -> pd.DataFrame:
+        """
+        Gets earthquake catalog for the specified region and minimum event
+        magnitude and writes the catalog to a file.
+
+        By default, events are retrieved from the NEIC PDE catalog for recent
+        events and then the ISC catalog when it becomes available. These default
+        results include only that catalog's "primary origin" and
+        "primary magnitude" for each event.
+        """
+
+        # Use obspy api to ge  events from the IRIS earthquake client
+        client = Client("IRIS")
+        cat = client.get_events(
+            starttime=starttime,
+            endtime=endtime,
+            magnitudetype="MW",
+            minmagnitude=minimum_magnitude,
+            minlatitude=latitude_range[0],
+            maxlatitude=latitude_range[1],
+            minlongitude=longitude_range[0],
+            maxlongitude=longitude_range[1],
+        )
+
+        # Write the earthquakes to a file
+        f = open(filename, "w")
+        f.write("EVENT_ID,time,lat,lon,dep,mag\n")
+        for event in cat:
+            longID = event.resource_id.id
+            ID = longID.split("eventid=", 1)[1]
+            loc = event.preferred_origin()
+            lat = loc.latitude
+            lon = loc.longitude
+            dep = loc.depth
+            time = loc.time.matplotlib_date
+            mag = event.preferred_magnitude().mag
+            f.write("{}, {}, {}, {}, {}, {}\n".format(ID, time, lat, lon, dep, mag))
+        f.close()
+        df = pd.read_csv(filename)
+
+        return df
+
+
 class SlowSlipCatalog(Catalog):
     def __init__(
         self,
@@ -721,98 +813,6 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
             / 2
             * DAY_PER_YEAR
         )
-
-        return df
-
-
-class EarthquakeCatalog(Catalog):
-    def __init__(
-        self,
-        filename: str = None,
-        use_other_catalog: bool = False,
-        kwargs: dict = None,
-        other_catalog: Catalog = None,
-        other_catalog_buffer: float = 0.0,
-    ) -> Catalog:
-
-        if kwargs is None:
-            kwargs = {}
-
-        if use_other_catalog and other_catalog is not None:
-            metadata = {
-                "starttime": other_catalog.start_time,
-                "endtime": other_catalog.end_time,
-                "latitude_range": other_catalog.latitude_range
-                + np.array([-1, 1]) * other_catalog_buffer,
-                "longitude_range": other_catalog.longitude_range
-                + np.array([-1, 1]) * other_catalog_buffer,
-            }
-            metadata.update(kwargs)
-        elif not use_other_catalog:
-            metadata = kwargs
-        else:
-            raise ValueError("No other catalog provided")
-
-        _catalog = self.get_and_save_catalog(filename, **metadata)
-        self.catalog = self._add_time_column(_catalog, "time")
-
-        super().__init__(self.catalog)
-
-    @staticmethod
-    def _add_time_column(df, column):
-        """
-        Adds a column to a dataframe with the time in days since the beginning of the year.
-        """
-        df[column] = pd.to_datetime(pd.to_datetime(df["time"], unit="d"))
-        return df
-
-    @staticmethod
-    def get_and_save_catalog(
-        filename: str = "_temp_local_catalog.csv",
-        starttime: str = "2019-01-01",
-        endtime: str = "2020-01-01",
-        latitude_range: list[float, float] = [-90, 90],
-        longitude_range: list[float, float] = [-180, 180],
-        minimum_magnitude: float = 4.5,
-    ) -> pd.DataFrame:
-        """
-        Gets earthquake catalog for the specified region and minimum event
-        magnitude and writes the catalog to a file.
-
-        By default, events are retrieved from the NEIC PDE catalog for recent
-        events and then the ISC catalog when it becomes available. These default
-        results include only that catalog's "primary origin" and
-        "primary magnitude" for each event.
-        """
-
-        # Use obspy api to ge  events from the IRIS earthquake client
-        client = Client("IRIS")
-        cat = client.get_events(
-            starttime=starttime,
-            endtime=endtime,
-            magnitudetype="MW",
-            minmagnitude=minimum_magnitude,
-            minlatitude=latitude_range[0],
-            maxlatitude=latitude_range[1],
-            minlongitude=longitude_range[0],
-            maxlongitude=longitude_range[1],
-        )
-
-        # Write the earthquakes to a file
-        f = open(filename, "w")
-        f.write("EVENT_ID,time,lat,lon,dep,mag\n")
-        for event in cat:
-            longID = event.resource_id.id
-            ID = longID.split("eventid=", 1)[1]
-            loc = event.preferred_origin()
-            lat = loc.latitude
-            lon = loc.longitude
-            dep = loc.depth
-            time = loc.time.matplotlib_date
-            mag = event.preferred_magnitude().mag
-            f.write("{}, {}, {}, {}, {}, {}\n".format(ID, time, lat, lon, dep, mag))
-        f.close()
-        df = pd.read_csv(filename)
 
         return df
 
