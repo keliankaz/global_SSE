@@ -14,6 +14,8 @@ from obspy.clients.fdsn import Client
 from typing import Optional, Literal
 
 EARTH_RADIUS_KM = 6371
+DAY_PER_YEAR = 365
+
 
 class Catalog:
     def __init__(
@@ -650,6 +652,79 @@ class IkariSlowSlipCatalog(SlowSlipCatalog):
         return df
 
 
+class MichelSlowSlipCatalog(SlowSlipCatalog):
+    def __init__(self):
+        self.dir_name = os.path.join(
+            os.path.dirname(__file__), "Datasets/Slow_slip_datasets/Cascadia"
+        )
+        self.file_name = "Michel2018.csv"
+
+        super().__init__(
+            filename=os.path.join(self.dir_name, self.file_name),
+        )
+
+    def _add_time_column(self, df, column):
+        """
+        Adds a column to a dataframe with date converted from deciyear.
+        """
+
+        for i, row in df.iterrows():
+            df.loc[i, column] = self._deciyear_to_datetime(row["year_time"])
+
+        return df
+
+    @staticmethod
+    def _deciyear_to_datetime(deciyear):
+        """
+        Converts decimal year to datetime.
+        """
+        year = int(deciyear)
+        rem = deciyear - year
+        base = datetime(year, 1, 1)
+        result = base + timedelta(
+            seconds=(base.replace(year=base.year + 1) - base).total_seconds() * rem
+        )
+        return result
+
+    @staticmethod
+    def read_catalog(file_name):
+        """
+        Reads in a catalog of slow slip events in Mexico and returns a pandas dataframe. Read each file in
+        Datasets/Slow_slip_datasets/Mexico/ directory and concatenate them into one dataframe.
+        """
+
+        df = pd.read_csv(
+            file_name,
+            skiprows=1,
+            sep="\t",
+            index_col=False,
+            names=[
+                "ID",
+                "year_time",
+                "mag",
+                "lat",
+                "lon",
+                "SSE_number_michel2018",
+                "min_start",
+                "max_start",
+                "min_end",
+                "max_end",
+                "start",
+                "end",
+            ],
+        )
+
+        # for the purpose of having one representative number for the duration
+        # take the average of the maximum and the minumum duration
+        df["duration"] = (
+            ((df["max_end"] - df["min_start"]) + (df["min_end"] - df["max_start"]))
+            / 2
+            * DAY_PER_YEAR
+        )
+
+        return df
+
+
 class EarthquakeCatalog(Catalog):
     def __init__(
         self,
@@ -745,18 +820,23 @@ class EarthquakeCatalog(Catalog):
 #%%
 
 if __name__ == "__main__":
-    
+
     # A few tests to ensure that everything still runs smoothly:
     slowslip = JapanSlowSlipCatalog()
 
     print("Japan Slow Slip Catalog")
     # test all visualizations:
-    plotting_methods = [k for k in dir(slowslip) if 'plot' in k]
-    [getattr(slowslip,k)() for k in plotting_methods]
+    plotting_methods = [k for k in dir(slowslip) if "plot" in k]
+    [getattr(slowslip, k)() for k in plotting_methods]
 
     print("Mexico Slow Slip Catalog")
     rousset_catalog = RoussetSlowSlipCatalog()
-    [getattr(rousset_catalog,k)() for k in plotting_methods]
+    [getattr(rousset_catalog, k)() for k in plotting_methods]
+
+    print("Cascadia Slow Slip Catalog")
+    michel_catalog = MichelSlowSlipCatalog()
+    [getattr(michel_catalog, k)() for k in plotting_methods]
 
     combined_catalog = slowslip + rousset_catalog
-    
+
+# %%
