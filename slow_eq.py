@@ -453,6 +453,9 @@ class SlowSlipCatalog(Catalog):
 
             self.catalog = self._add_time_column(_catalog, "time")
 
+        if "duration" not in self.catalog.keys():
+            self.catalog["duration"] = np.nan * np.ones(len(self.catalog), 1)
+
         super().__init__(self.catalog)
 
     def _add_time_column(self, df, column):
@@ -689,6 +692,8 @@ class WilliamsSlowSlipCatalog(SlowSlipCatalog):
         df["month"] = df["Start_month"]
         df["day"] = df["Start_day"]
 
+        # TODO: add duration to this catalog
+
         return df
 
 
@@ -728,7 +733,7 @@ class IkariSlowSlipCatalog(SlowSlipCatalog):
                 "Event",
                 "Month",
                 "Year",
-                "Duration",
+                "duration",
                 "Depth_of_Maximum_Slip_km",
                 "Maximum_Slip_mm",
                 "Stress_Drop_kPa",
@@ -822,6 +827,8 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
 if __name__ == "__main__":
 
     # A few tests to ensure that everything still runs smoothly:
+    slowslip = WilliamsSlowSlipCatalog()
+
     slowslip = JapanSlowSlipCatalog()
 
     print("Japan Slow Slip Catalog")
