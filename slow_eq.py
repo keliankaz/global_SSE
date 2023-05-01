@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import seaborn as sns
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -15,6 +16,49 @@ from typing import Optional, Literal
 
 EARTH_RADIUS_KM = 6371
 DAY_PER_YEAR = 365
+SEC_PER_DAY = 86400
+
+
+def get_xyz_from_lonlat(
+    lon: np.ndarray, lat: np.ndarray, depth_km: np.ndarray = None
+) -> np.ndarray:
+    """Converts longitude, latitude, and depth to x, y, and z Cartesian
+    coordinates.
+
+    Args:
+        lon: The longitude, in degrees.
+        lat: The latitude, in degrees.
+        depth_km: The depth, in kilometers.
+
+    Returns:
+        The Cartesian coordinates (x, y, z), in kilometers.
+    """
+    # Check the shapes of the input arrays
+    if lon.shape != lat.shape:
+        raise ValueError("lon and lat must have the same shape")
+
+    assert -180 <= lon.all() <= 180, "Longitude must be between -180 and 180"
+    assert -90 <= lat.all() <= 90, "Latitude must be between -90 and 90"
+    assert depth_km is None or depth_km.all() >= 0, "Depth must be positive"
+
+    # Assign zero depth if not provided:
+    if depth_km is None:
+        depth_km = np.zeros_like(lat)
+
+    # Convert to radians
+    lat_rad = lat * np.pi / 180
+    lon_rad = lon * np.pi / 180
+
+    # Calculate the distance from the center of the earth using the depth
+    # and the radius of the earth (6371 km)
+    r = EARTH_RADIUS_KM + depth_km
+
+    # Calculate the x, y, z coordinates
+    x = r * np.cos(lat_rad) * np.cos(lon_rad)
+    y = r * np.cos(lat_rad) * np.sin(lon_rad)
+    z = r * np.sin(lat_rad)
+
+    return np.array([x, y, z]).T
 
 
 class Catalog:
@@ -227,7 +271,7 @@ class Catalog:
             (x - p1), (p2 - p1)
         ) / np.linalg.norm(p2 - p1)
         distance_along_section = get_distance_along_section(
-            p1, p2, self.catalog[["lon", "lat"]].values
+            p1, p2, self.catalog[["lat", "lon"]].values
         )
 
         ax.scatter(self.catalog.time, distance_along_section, **kwargs)
@@ -443,7 +487,11 @@ class SlowSlipCatalog(Catalog):
         catalog: pd.DataFrame = None,
         filename: str = None,
         time_columns: list[str] = ["year", "month", "day"],
+        time_alignment: Literal[
+            "centroid", "start"
+        ] = "centroid",  # assumes SSEs times are centroid-time
     ):
+
         if catalog is not None:
             self.catalog = catalog
         else:
@@ -454,9 +502,11 @@ class SlowSlipCatalog(Catalog):
             self.catalog = self._add_time_column(_catalog, "time")
 
         if "duration" not in self.catalog.keys():
-            self.catalog["duration"] = np.nan * np.ones(len(self.catalog), 1)
+            self.catalog["duration"] = np.nan * np.ones(len(self.catalog))
 
         super().__init__(self.catalog)
+
+        self.time_alignment = time_alignment
 
     def _add_time_column(self, df, column):
         """
@@ -471,6 +521,113 @@ class SlowSlipCatalog(Catalog):
         """
         raise NotImplementedError
 
+    def plot_slowslip_timeseries(self, column: str = "mag", ax=None) -> plt.axes.Axes:
+        """
+        Plots a time series of a given column in a dataframe.
+        """
+        if ax is None:
+            fig, ax = plt.subplots()
+
+        for t, d, c in zip(
+            self.catalog["time"],
+            self.catalog["duration"],
+            self.catalog[column],
+        ):
+            if np.isnan(d) and not np.isnan(c):
+                ax.axvline(t, alpha=c / np.nanmax(self.catalog[column]))
+            elif not np.isnan(d):
+                ax.axvspan(
+                    t - d * pd.Timedelta(1, "s") / 2,
+                    t + d * pd.Timedelta(1, "s") / 2,
+                    alpha=0.2,
+                )
+
+        ax.set_xlabel("Time")
+        axb = ax.twinx()
+        sns.ecdfplot(self.catalog["time"], c="C1", stat="count", ax=axb)
+
+        return ax
+
+    def plot_slowslip_spacetimeseries(
+        self,
+        p1: list[float, float] = None,
+        p2: list[float, float] = None,
+        kwargs: dict = None,
+        ax: Optional[plt.axes.Axes] = None,
+    ) -> plt.axes.Axes:
+
+        if ax is None:
+            fig, ax = plt.subplots()
+
+        if p1 is None and p2 is None:
+            p1 = np.array([self.longitude_range[0], self.latitude_range[0]])
+            p2 = np.array([self.longitude_range[1], self.latitude_range[1]])
+
+        default_kwargs = {
+            "alpha": 0.5,
+        }
+
+        if kwargs is None:
+            kwargs = {}
+        default_kwargs.update(kwargs)
+        kwargs = default_kwargs
+
+        p1, p2, x = [
+            get_xyz_from_lonlat(np.atleast_2d(ll)[:, 0], np.atleast_2d(ll)[:, 1])
+            for ll in [p1, p2, self.catalog[["lon", "lat"]].values]
+        ]
+        distance_along_section = np.matmul((x - p1), (p2 - p1).T) / np.linalg.norm(
+            p2 - p1
+        )
+
+        for x, y, d, L in zip(
+            self.catalog.time,
+            distance_along_section,
+            (self.catalog.duration * pd.Timedelta(1, "s")).values,
+            Scaling.magnitude_to_size(self.catalog.mag, 1e4, "km"),
+        ):
+            rh, lh, xh = None, None, None
+            if (np.isnan(d) or d == 0) and np.isnan(L):
+                xh = ax.scatter(
+                    x,
+                    y,
+                    marker="x",
+                    c="C0",
+                    **kwargs,
+                    label="Unknown duration and size",
+                )
+            elif not np.isnan(L) and np.isnan(d):
+                lh = ax.plot(
+                    [x, x],
+                    [y - L / 2, y + L / 2],
+                    c="r",
+                    **kwargs,
+                    label="Unknown duration",
+                )
+            else:
+                start = mdates.date2num(x - d / 2)
+                end = mdates.date2num(x + d / 2)
+                width = end - start
+                rh = plt.Rectangle(
+                        xy=[start, y - L / 2],
+                        width=width,
+                        height=L,
+                        edgecolor=None,
+                        **kwargs,
+                        label="Known duration and size",
+                    )
+                ax.add_patch(rh)
+
+        ax.scatter(self.catalog.time, distance_along_section, s=0)
+
+        ax.set(
+            xlabel="Time",
+            yticks=[],
+            ylabel="Distance along cross-section",
+        )
+        
+        return ax
+
     @staticmethod
     def read_catalog(filename):
         """
@@ -478,6 +635,28 @@ class SlowSlipCatalog(Catalog):
         """
         df = pd.read_csv(filename)
         return df
+
+
+class Scaling:
+    """A collection of scaling relationships for earthquakes"""
+
+    @staticmethod
+    def magnitude_to_size(
+        MW: np.ndarray, stress_drop_Pa=3e6, out_unit: Literal["km", "m"] = "km"
+    ) -> np.ndarray:
+
+        # M0 = mu * A * D ~ \delta \sigma * a^3                   # MISSING CONSTANTS HERE!
+        # Mw = (2/3) * (log10(M0) - 9.1)
+        # a ~ [(1/(\delta \sigma)) 10^((3/2 * Mw) + 9.1)]^(1/3)   # CHECK THIS! e.g. dyne cm vs Pa
+        # for SSEs \delta \sigma ~ 10 kPa
+        # for Earthquake \delta \sigma ~ 3 MPa (default)
+        # returns the dimensions of the earthquake in km
+
+        unit_conversion_factor = {"km": 1 / 1000, "m": 1}
+
+        return (10 ** ((3 / 2) * MW + 9.1) / stress_drop_Pa) ** (
+            1 / 3
+        ) * unit_conversion_factor[out_unit]
 
 
 class JapanSlowSlipCatalog(SlowSlipCatalog):
@@ -592,6 +771,7 @@ class RoussetSlowSlipCatalog(SlowSlipCatalog):
             names=["lon", "lat", "date", "duration", "mag"],
             engine="python",
         )
+        df.duration = df.duration * 24 * 3600  # convert from days to seconds
 
         return df
 
@@ -817,7 +997,9 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
             ((df["max_end"] - df["min_start"]) + (df["min_end"] - df["max_start"]))
             / 2
             * DAY_PER_YEAR
+            * SEC_PER_DAY
         )
+        df["lon"] = -df["lon"]
 
         return df
 
@@ -827,23 +1009,19 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
 if __name__ == "__main__":
 
     # A few tests to ensure that everything still runs smoothly:
-    slowslip = WilliamsSlowSlipCatalog()
-
-    slowslip = JapanSlowSlipCatalog()
+    william_catalog = WilliamsSlowSlipCatalog()
+    japan_catalog = JapanSlowSlipCatalog()
+    rousset_catalog = RoussetSlowSlipCatalog()
+    michel_catalog = MichelSlowSlipCatalog()
 
     print("Japan Slow Slip Catalog")
+
     # test all visualizations:
-    plotting_methods = [k for k in dir(slowslip) if "plot" in k]
-    [getattr(slowslip, k)() for k in plotting_methods]
+    plotting_methods = [k for k in dir(japan_catalog) if "plot" in k]
+    for catalog in [william_catalog, japan_catalog, rousset_catalog, michel_catalog]:
+        print(catalog)
+        [getattr(catalog, k)() for k in plotting_methods]
 
-    print("Mexico Slow Slip Catalog")
-    rousset_catalog = RoussetSlowSlipCatalog()
-    [getattr(rousset_catalog, k)() for k in plotting_methods]
-
-    print("Cascadia Slow Slip Catalog")
-    michel_catalog = MichelSlowSlipCatalog()
-    [getattr(michel_catalog, k)() for k in plotting_methods]
-
-    combined_catalog = slowslip + rousset_catalog
+    combined_catalog = japan_catalog + rousset_catalog
 
 # %%
