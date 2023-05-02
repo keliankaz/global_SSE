@@ -13,6 +13,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from obspy.clients.fdsn import Client
 from typing import Optional, Literal
+import copy
 
 EARTH_RADIUS_KM = 6371
 DAY_PER_YEAR = 365
@@ -74,16 +75,26 @@ class Catalog:
         )  # Save a copy of the raw catalog in case of regret
 
         _catalog = catalog.copy()
-        _catalog = _catalog.sort_values(by="time")
-
         self.catalog = _catalog
+        self.__mag_completeness = mag_completeness
+        self.__mag_completeness_method = None
+
+        self.units = {k: None for k in self.catalog.keys()}
+        if units is not None:
+            assert set(units.keys()).issubset(
+                set(self.catalog.keys())
+            ), "Invalid keys in units"
+            self.units.update(units)
+
+        self.__update__()
+
+    def __update__(self):
+        self.catalog = self.catalog.sort_values(by="time")
 
         # Save catalog attributes to self
         self.start_time = self.catalog["time"].min()
         self.end_time = self.catalog["time"].max()
         self.duration = self.end_time - self.start_time
-        self.__mag_completeness = mag_completeness
-        self.__mag_completeness_method = None
 
         if "lat" in self.catalog.keys() and "lon" in self.catalog.keys():
             self.latitude_range = (self.catalog["lat"].min(), self.catalog["lat"].max())
@@ -94,13 +105,6 @@ class Catalog:
 
         assert self.catalog["time"] is not None, "No time column"
         assert self.catalog["mag"] is not None, "No magnitude column"
-
-        self.units = {k: None for k in self.catalog.keys()}
-        if units is not None:
-            assert set(units.keys()).issubset(
-                set(self.catalog.keys())
-            ), "Invalid keys in units"
-            self.units.update(units)
 
     @property
     def mag_completeness(
@@ -146,7 +150,11 @@ class Catalog:
         step: int = None,
     ) -> Catalog:
 
-        return Catalog(self.catalog[start:stop:step])
+        new = copy.deepcopy(self)
+        new.catalog = self.catalog[start:stop:step]
+        new.__update__()
+
+        return new
 
     def __iter__(self):
         return self.catalog.iterrows()
@@ -155,7 +163,11 @@ class Catalog:
         combined_catalog = pd.concat(
             [self.catalog, other.catalog], ignore_index=True, sort=False
         )
-        return Catalog(combined_catalog)
+        new = copy.deepcopy(self)
+        new.catalog = combined_catalog
+        new.__update__()
+
+        return new
 
     def slice_by(
         self,
@@ -170,7 +182,12 @@ class Catalog:
 
         assert start <= stop
         in_range = (self.catalog[col_name] >= start) & (self.catalog[col_name] <= stop)
-        return Catalog(self.catalog.loc[in_range])
+
+        new = copy.deepcopy(self)
+        new.catalog = self.catalog.loc[in_range]
+        new.__update__()
+
+        return new
 
     def get_time_slice(self, start_time, end_time):
         return self.slice_by("time", start_time, end_time)
@@ -193,7 +210,11 @@ class Catalog:
 
         indices = np.unique(np.concatenate(indices))
 
-        return Catalog(self.catalog.iloc[indices])
+        new = copy.deepcopy(self)
+        new.catalog = self.catalog.iloc[indices]
+        new.__update__()
+
+        return new
 
     def get_neighboring_indices(
         self, other: Catalog, buffer_radius_km: float = 50.0
@@ -609,13 +630,13 @@ class SlowSlipCatalog(Catalog):
                 end = mdates.date2num(x + d / 2)
                 width = end - start
                 rh = plt.Rectangle(
-                        xy=[start, y - L / 2],
-                        width=width,
-                        height=L,
-                        edgecolor=None,
-                        **kwargs,
-                        label="Known duration and size",
-                    )
+                    xy=[start, y - L / 2],
+                    width=width,
+                    height=L,
+                    edgecolor=None,
+                    **kwargs,
+                    label="Known duration and size",
+                )
                 ax.add_patch(rh)
 
         ax.scatter(self.catalog.time, distance_along_section, s=0)
@@ -625,7 +646,7 @@ class SlowSlipCatalog(Catalog):
             yticks=[],
             ylabel="Distance along cross-section",
         )
-        
+
         return ax
 
     @staticmethod
