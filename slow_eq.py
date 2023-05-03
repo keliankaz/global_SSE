@@ -86,6 +86,8 @@ class Catalog:
             ), "Invalid keys in units"
             self.units.update(units)
 
+        self._stress_drop = 3e9  # Pa
+
         self.__update__()
 
     def __update__(self):
@@ -280,7 +282,7 @@ class Catalog:
 
         default_kwargs = {
             "alpha": 0.5,
-            "s": 1,
+            "color": "C0",
         }
 
         if kwargs is None:
@@ -288,22 +290,36 @@ class Catalog:
         default_kwargs.update(kwargs)
         kwargs = default_kwargs
 
-        get_distance_along_section = lambda p1, p2, x: np.dot(
-            (x - p1), (p2 - p1)
-        ) / np.linalg.norm(p2 - p1)
-        distance_along_section = get_distance_along_section(
-            p1, p2, self.catalog[["lat", "lon"]].values
+        p1, p2, x = [
+            get_xyz_from_lonlat(np.atleast_2d(ll)[:, 0], np.atleast_2d(ll)[:, 1])
+            for ll in [p1, p2, self.catalog[["lon", "lat"]].values]
+        ]
+
+        distance_along_section = np.matmul((x - p1), (p2 - p1).T) / np.linalg.norm(
+            p2 - p1
         )
 
-        ax.scatter(self.catalog.time, distance_along_section, **kwargs)
-
-        ax.set(
-            xlabel="Time",
-            yticks=[],
-            ylabel="Distance along cross-section",
+        ax.scatter(
+            self.catalog.time,
+            distance_along_section,
+            **kwargs,
+            label="Unknown duration and size",
+            s=1,
         )
-        if "label" in kwargs.keys():
-            ax.legend()
+
+        # horizonta histogram of distance along section on the right side of the plot pointing left
+        axb = ax.twiny()
+        axb.hist(
+            distance_along_section,
+            orientation="horizontal",
+            density=True,
+            alpha=0.3,
+        )
+
+        axb.set(
+            xlim=np.array(axb.get_xlim()[::-1]) * 10,
+            xticks=[],
+        )
 
         return ax
 
@@ -319,9 +335,37 @@ class Catalog:
         usemap_proj = ccrs.PlateCarree()
         # set appropriate extents: (lon_min, lon_max, lat_min, lat_max)
         buffer = 1
+        if self.longitude_range is None or self.latitude_range is None:
+            extent = (
+                np.array(
+                    [
+                        self.catalog["lon"].min(),
+                        self.catalog["lon"].max(),
+                        self.catalog["lat"].min(),
+                        self.catalog["lat"].max(),
+                    ]
+                )
+                + np.array([-1, 1, -1, 1]) * buffer
+            )
+
+        else:
+            extent = (
+                np.array(self.longitude_range + self.latitude_range)
+                + np.array([-1, 1, -1, 1]) * buffer
+            )
+
+        if extent[0] < -180:
+            extent[0] = -179.99
+        if extent[1] > 180:
+            extent[1] = 179.99
+
+        if extent[2] < -90:
+            extent[2] = 90
+        if extent[3] > 90:
+            extent[3] = 90
+
         ax.set_extent(
-            np.array(self.longitude_range + self.latitude_range)
-            + np.array([-1, 1, -1, 1]) * buffer,
+            extent,
             crs=ccrs.PlateCarree(),
         )
 
@@ -471,6 +515,7 @@ class EarthquakeCatalog(Catalog):
         """
 
         # Use obspy api to ge  events from the IRIS earthquake client
+
         client = Client("IRIS")
         cat = client.get_events(
             starttime=starttime,
@@ -479,8 +524,8 @@ class EarthquakeCatalog(Catalog):
             minmagnitude=minimum_magnitude,
             minlatitude=latitude_range[0],
             maxlatitude=latitude_range[1],
-            minlongitude=longitude_range[0],
-            maxlongitude=longitude_range[1],
+            minlongitude=max(-180, longitude_range[0]),
+            maxlongitude=min(180, longitude_range[1]),
         )
 
         # Write the earthquakes to a file
@@ -528,6 +573,7 @@ class SlowSlipCatalog(Catalog):
         super().__init__(self.catalog)
 
         self.time_alignment = time_alignment
+        self._stress_drop = 1e4  # Pa
 
     def _add_time_column(self, df, column):
         """
@@ -569,7 +615,7 @@ class SlowSlipCatalog(Catalog):
 
         return ax
 
-    def plot_slowslip_spacetimeseries(
+    def plot_space_time_series(
         self,
         p1: list[float, float] = None,
         p2: list[float, float] = None,
@@ -586,6 +632,7 @@ class SlowSlipCatalog(Catalog):
 
         default_kwargs = {
             "alpha": 0.5,
+            "color": "C0",
         }
 
         if kwargs is None:
@@ -605,23 +652,20 @@ class SlowSlipCatalog(Catalog):
             self.catalog.time,
             distance_along_section,
             (self.catalog.duration * pd.Timedelta(1, "s")).values,
-            Scaling.magnitude_to_size(self.catalog.mag, 1e4, "km"),
+            Scaling.magnitude_to_size(self.catalog.mag, self._stress_drop, "km"),
         ):
-            rh, lh, xh = None, None, None
             if (np.isnan(d) or d == 0) and np.isnan(L):
-                xh = ax.scatter(
+                ax.scatter(
                     x,
                     y,
                     marker="x",
-                    c="C0",
                     **kwargs,
                     label="Unknown duration and size",
                 )
             elif not np.isnan(L) and np.isnan(d):
-                lh = ax.plot(
+                ax.plot(
                     [x, x],
                     [y - L / 2, y + L / 2],
-                    c="r",
                     **kwargs,
                     label="Unknown duration",
                 )
@@ -633,7 +677,6 @@ class SlowSlipCatalog(Catalog):
                     xy=[start, y - L / 2],
                     width=width,
                     height=L,
-                    edgecolor=None,
                     **kwargs,
                     label="Known duration and size",
                 )
@@ -645,6 +688,19 @@ class SlowSlipCatalog(Catalog):
             xlabel="Time",
             yticks=[],
             ylabel="Distance along cross-section",
+        )
+
+        axb = ax.twiny()
+        axb.hist(
+            distance_along_section,
+            orientation="horizontal",
+            density=True,
+            **kwargs,
+        )
+
+        axb.set(
+            xlim=np.array(axb.get_xlim()[::-1]) * 10,
+            xticks=[],
         )
 
         return ax
@@ -1024,6 +1080,8 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
 
         return df
 
+
+# %%
 
 #%%
 
