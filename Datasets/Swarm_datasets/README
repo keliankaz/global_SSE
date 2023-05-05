@@ -1,0 +1,14 @@
+## Swarms datasets
+
+### Global swarm datasets
+
+Detection of earthquake swarms at subduction zones globally: Insights into tectonic controls on swarm activity
+
+    File name:
+    Nishikawa2017.txt
+
+    Header:
+    Region_name Time_period Cluseter_id Lon(deg) Lat(deg) Depth(km) Magnitude Year Month Day Hour Minute Second
+
+    Citation:
+    Nishikawa, T., and Ide, S. (2017), Detection of earthquake swarms at subduction zones globally: Insights into tectonic controls on swarm activity, J. Geophys. Res. Solid Earth, 122, 5325– 5343, doi:10.1002/2017JB014188. 
