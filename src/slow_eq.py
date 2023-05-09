@@ -16,7 +16,6 @@ from typing import Optional, Literal, List, Tuple
 import copy
 import warnings
 from pathlib import Path
-import src
 
 base_dir = Path(__file__).parents[1]
 
@@ -255,11 +254,17 @@ class Catalog:
         """
         if ax is None:
             fig, ax = plt.subplots()
+            
+        if column == "mag" and self.mag_completeness is not None:
+            bottom = self.mag_completeness-0.05
+        else:
+            bottom = 0
 
         markers, stems, _ = ax.stem(
             self.catalog["time"],
             self.catalog[column],
             markerfmt=".",
+            bottom = bottom,
         )
         plt.setp(stems, linewidth=0.5, alpha=0.5)
         plt.setp(markers, markersize=0.5, alpha=0.5)
@@ -798,7 +803,7 @@ class Scaling:
 
 class JapanSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self, files=None):
-        self.dir_name = os.path.join(base_dir,"Datasets/Slow_slip_datasets/Japan/"),
+        self.dir_name = os.path.join(base_dir,"Datasets/Slow_slip_datasets/Japan/")
         _catalog = self.read_catalog(self.dir_name, files)
         self.files = files
         self.catalog = self._add_time_column(_catalog, "time")
@@ -820,12 +825,11 @@ class JapanSlowSlipCatalog(SlowSlipCatalog):
         Datasets/Slow_slip_datasets/Japan/ directory and concatenate them into one dataframe.
         """
         if files is None:
-            full_dir_name = os.path.join(os.path.dirname(__file__), dir_name)
-            directory_content = os.listdir(full_dir_name)
+            directory_content = os.listdir(dir_name)
             files = [
                 f
                 for f in directory_content
-                if os.path.isfile(os.path.join(full_dir_name, f))
+                if os.path.isfile(os.path.join(dir_name, f))
             ]
 
         if type(files) is str:
@@ -835,7 +839,7 @@ class JapanSlowSlipCatalog(SlowSlipCatalog):
 
         for i, file in enumerate(files):
             df = pd.read_csv(
-                os.path.join(full_dir_name, file),
+                os.path.join(dir_name, file),
                 comment='"',
                 na_values="\s",
                 skipinitialspace=True,
@@ -1069,7 +1073,7 @@ class IkariSlowSlipCatalog(SlowSlipCatalog):
 class MichelSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.dir_name = os.path.join(
-            os.path.dirname(__file__), os.path.join(base_dir,"Datasets/Slow_slip_datasets/Cascadia"),
+            os.path.dirname(__file__), os.path.join(base_dir,"Datasets/Slow_slip_datasets/Cascadia")
         )
         self.file_name = "Michel2018.csv"
 
@@ -1171,7 +1175,7 @@ class SwarmCatalog(SlowSlipCatalog):
 class NishikawaSwarmCatalog(SwarmCatalog):
 
     def __init__(self):
-        self.dir_name = os.path.join(base_dir,"Datasets/Swarm_datasets/Global"),
+        self.dir_name = os.path.join(base_dir,"Datasets/Swarm_datasets/Global")
         self.file_name = "nishikawa2017S3.txt"
         
         _catalog = self.read_catalog(os.path.join(self.dir_name, self.file_name))
