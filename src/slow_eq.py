@@ -22,7 +22,7 @@ base_dir = Path(__file__).parents[1]
 EARTH_RADIUS_KM = 6371
 DAY_PER_YEAR = 365
 SEC_PER_DAY = 86400
-
+    
 
 def get_xyz_from_lonlat(
     lon: np.ndarray, lat: np.ndarray, depth_km: np.ndarray = None
@@ -174,6 +174,9 @@ class Catalog:
         new.__update__()
 
         return new
+    
+    def __radd__(self, other):
+        return self.__add__(other)
 
     def slice_by(
         self,
@@ -396,7 +399,7 @@ class Catalog:
         ax.gridlines(draw_labels=True, crs=usemap_proj, color="gray", linewidth=0.3)
 
         default_scatter_kawrg = {
-            "c": "lightgray",
+            "color": "lightgray",
             "marker": "o",
             "edgecolors": "brown",
             "transform": ccrs.PlateCarree(),
@@ -867,7 +870,7 @@ class JapanSlowSlipCatalog(SlowSlipCatalog):
 
 class RoussetSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
-        self.dir_name = os.path.join(base_dir,"Datasets/Slow_slip_datasets/Mexico/"),
+        self.dir_name = os.path.join(base_dir,"Datasets/Slow_slip_datasets/Mexico/")
         self.file_name = "Rousset2017.txt"
         _catalog = self.read_catalog(self.dir_name, self.file_name)
         self.catalog = self._add_time_column(_catalog, "time")
@@ -1144,22 +1147,19 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
 
         return df
 
-class SwarmCatalog(SlowSlipCatalog):
+class SwarmCatalog(Catalog):
     def __init__(
         self,
         catalog: pd.DataFrame = None,
         filename: str = None,
         time_columns: list[str] = ["Year", "Month", "Day", "Hour", "Minute", "Second"],
-        time_alignment: Literal[
-            "centroid", "start"
-        ] = "centroid",  # assumes SSEs times are centroid-time
     ):
         """
         Swarm catalog.
         """
         
         if catalog is not None:
-            self.catalog = catalog
+            _catalog = catalog
         else:
             assert filename is not None and time_columns is not None
             _catalog = self.read_catalog(filename)
@@ -1168,9 +1168,16 @@ class SwarmCatalog(SlowSlipCatalog):
             _catalog =  self._add_time_column(_catalog, "time")
         
         
-        super().__init__(catalog, filename, time_columns, time_alignment)
+        super().__init__(_catalog)
         
         return self
+
+    def _add_time_column(self, df, column):
+        """
+        Adds a column to a dataframe with the time in days since the beginning of the year.
+        """
+        df[column] = pd.to_datetime(df[self._time_columns])
+        return df
 
 class NishikawaSwarmCatalog(SwarmCatalog):
 
@@ -1219,9 +1226,6 @@ class NishikawaSwarmCatalog(SwarmCatalog):
         
         return df
 
-# %%
-
-#%%
 
 if __name__ == "__main__":
 
