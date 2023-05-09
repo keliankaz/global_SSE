@@ -12,8 +12,9 @@ import seaborn as sns
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from obspy.clients.fdsn import Client
-from typing import Optional, Literal
+from typing import Optional, Literal, List, Tuple
 import copy
+import warnings
 
 EARTH_RADIUS_KM = 6371
 DAY_PER_YEAR = 365
@@ -105,8 +106,8 @@ class Catalog:
                 self.catalog["lon"].max(),
             )
 
-        assert self.catalog["time"] is not None, "No time column"
-        assert self.catalog["mag"] is not None, "No magnitude column"
+        assert "time" in self.catalog.keys() is not None, "No time column"
+        assert "mag" in self.catalog.keys() is not None, "No magnitude column"
 
     @property
     def mag_completeness(
@@ -270,6 +271,7 @@ class Catalog:
         self,
         p1: list[float, float] = None,
         p2: list[float, float] = None,
+        column: str = "mag",
         kwargs: dict = None,
         ax: Optional[plt.axes.Axes] = None,
     ) -> plt.axes.Axes:
@@ -299,12 +301,14 @@ class Catalog:
             p2 - p1
         )
 
+        marker_size = getattr(self.catalog,column) if isinstance(column,str) else 1
+
         ax.scatter(
             self.catalog.time,
             distance_along_section,
             **kwargs,
             label="Unknown duration and size",
-            s=1,
+            s=marker_size,
         )
 
         # horizonta histogram of distance along section on the right side of the plot pointing left
@@ -324,7 +328,11 @@ class Catalog:
         return ax
 
     def plot_map(
-        self, columm: str = "mag", scatter_kwarg=None, ax=None
+        self, 
+        columm: str = "mag", 
+        scatter_kwarg: dict = None, 
+        extent: Optional[Tuple[float, float,float, float]] = None, 
+        ax=None, 
     ) -> plt.axes.Axes:
 
         if ax is None:
@@ -334,25 +342,26 @@ class Catalog:
 
         usemap_proj = ccrs.PlateCarree()
         # set appropriate extents: (lon_min, lon_max, lat_min, lat_max)
-        buffer = 1
-        if self.longitude_range is None or self.latitude_range is None:
-            extent = (
-                np.array(
-                    [
-                        self.catalog["lon"].min(),
-                        self.catalog["lon"].max(),
-                        self.catalog["lat"].min(),
-                        self.catalog["lat"].max(),
-                    ]
+        if extent is None:
+            buffer = 1
+            if self.longitude_range is None or self.latitude_range is None:
+                extent = (
+                    np.array(
+                        [
+                            self.catalog["lon"].min(),
+                            self.catalog["lon"].max(),
+                            self.catalog["lat"].min(),
+                            self.catalog["lat"].max(),
+                        ]
+                    )
+                    + np.array([-1, 1, -1, 1]) * buffer
                 )
-                + np.array([-1, 1, -1, 1]) * buffer
-            )
 
-        else:
-            extent = (
-                np.array(self.longitude_range + self.latitude_range)
-                + np.array([-1, 1, -1, 1]) * buffer
-            )
+            else:
+                extent = (
+                    np.array(self.longitude_range + self.latitude_range)
+                    + np.array([-1, 1, -1, 1]) * buffer
+                )
 
         if extent[0] < -180:
             extent[0] = -179.99
@@ -457,6 +466,7 @@ class Catalog:
 class EarthquakeCatalog(Catalog):
     def __init__(
         self,
+        catalog: Optional[pd.DataFrame] = None,
         filename: str = None,
         use_other_catalog: bool = False,
         kwargs: dict = None,
@@ -464,26 +474,29 @@ class EarthquakeCatalog(Catalog):
         other_catalog_buffer: float = 0.0,
     ) -> Catalog:
 
-        if kwargs is None:
-            kwargs = {}
+        if catalog is None:
+            if kwargs is None:
+                kwargs = {}
 
-        if use_other_catalog and other_catalog is not None:
-            metadata = {
-                "starttime": other_catalog.start_time,
-                "endtime": other_catalog.end_time,
-                "latitude_range": other_catalog.latitude_range
-                + np.array([-1, 1]) * other_catalog_buffer,
-                "longitude_range": other_catalog.longitude_range
-                + np.array([-1, 1]) * other_catalog_buffer,
-            }
-            metadata.update(kwargs)
-        elif not use_other_catalog:
-            metadata = kwargs
+            if use_other_catalog and other_catalog is not None:
+                metadata = {
+                    "starttime": other_catalog.start_time,
+                    "endtime": other_catalog.end_time,
+                    "latitude_range": other_catalog.latitude_range
+                    + np.array([-1, 1]) * other_catalog_buffer,
+                    "longitude_range": other_catalog.longitude_range
+                    + np.array([-1, 1]) * other_catalog_buffer,
+                }
+                metadata.update(kwargs)
+            elif not use_other_catalog:
+                metadata = kwargs
+            else:
+                raise ValueError("No other catalog provided")
+
+            _catalog = self.get_and_save_catalog(filename, **metadata)
+            self.catalog = self._add_time_column(_catalog, "time")
         else:
-            raise ValueError("No other catalog provided")
-
-        _catalog = self.get_and_save_catalog(filename, **metadata)
-        self.catalog = self._add_time_column(_catalog, "time")
+            self.catalog = catalog
 
         super().__init__(self.catalog)
 
@@ -503,6 +516,8 @@ class EarthquakeCatalog(Catalog):
         latitude_range: list[float, float] = [-90, 90],
         longitude_range: list[float, float] = [-180, 180],
         minimum_magnitude: float = 4.5,
+        use_local_client: bool = False,
+        default_client_name: str = "IRIS",
     ) -> pd.DataFrame:
         """
         Gets earthquake catalog for the specified region and minimum event
@@ -513,34 +528,75 @@ class EarthquakeCatalog(Catalog):
         results include only that catalog's "primary origin" and
         "primary magnitude" for each event.
         """
+        
+        if longitude_range[1] > 180:
+            longitude_range[1] = 180
+            warnings.warn("Longitude range exceeds 180 degrees. Setting to 180.")
+            
+        if longitude_range[0] < -180:
+            longitude_range[0] = -180
+            warnings.warn("Longitude range exceeds -180 degrees. Setting to -180.")
+        
+        def is_within(lat_range_querry, lon_range_querry, lat_range, lon_range):
+            """
+            Checks if a point is within a latitude and longitude range.
+            """
+            return (lat_range[0] <= lat_range_querry[0] <= lat_range[1]) and (
+                lon_range[0] <= lon_range_querry[0] <= lon_range[1]) and (
+                lat_range[0] <= lat_range_querry[1] <= lat_range[1]) and (
+                lon_range[0] <= lon_range_querry[1] <= lon_range[1]
+            )
+        
+        local_client_coverage = {
+            "GEONET": [[-49.18, -32.28], [163.52, 179.99]],
+        }
 
-        # Use obspy api to ge  events from the IRIS earthquake client
+        # Note that using local client supersedes the any specified default_client_name 
+        if use_local_client:
+            ## use local clients if lat and long are withing the coverage of the local catalogs
+            index = []
+            for i,key in enumerate(local_client_coverage.keys()):
+                if is_within(latitude_range, longitude_range, *local_client_coverage[key]):
+                    index.append(i)
+                else:
+                    index.append(i)
 
-        client = Client("IRIS")
+            if len(index) > 1:
+                raise ValueError("Multiple local clients found")
+            elif len(index) == 1:
+                if default_client_name is not None:
+                    warnings.warn("Using local client instead of default client")
+                client_name=list(local_client_coverage.keys())[index[0]]
+            else:
+                client_name = default_client_name
+        else:
+            client_name = default_client_name
+        
+        
+        # Use obspy api to ge  events from the IRIS earthquake client    
+        client = Client(client_name)
+                
         cat = client.get_events(
             starttime=starttime,
             endtime=endtime,
-            magnitudetype="MW",
             minmagnitude=minimum_magnitude,
             minlatitude=latitude_range[0],
             maxlatitude=latitude_range[1],
-            minlongitude=max(-180, longitude_range[0]),
-            maxlongitude=min(180, longitude_range[1]),
+            minlongitude=longitude_range[0],
+            maxlongitude=longitude_range[1],
         )
 
         # Write the earthquakes to a file
         f = open(filename, "w")
-        f.write("EVENT_ID,time,lat,lon,dep,mag\n")
+        f.write("time,lat,lon,dep,mag\n")
         for event in cat:
-            longID = event.resource_id.id
-            ID = longID.split("eventid=", 1)[1]
             loc = event.preferred_origin()
             lat = loc.latitude
             lon = loc.longitude
             dep = loc.depth
             time = loc.time.matplotlib_date
             mag = event.preferred_magnitude().mag
-            f.write("{}, {}, {}, {}, {}, {}\n".format(ID, time, lat, lon, dep, mag))
+            f.write("{}, {}, {}, {}, {}\n".format(time, lat, lon, dep, mag))
         f.close()
         df = pd.read_csv(filename)
 
@@ -1080,6 +1136,80 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
 
         return df
 
+class SwarmCatalog(SlowSlipCatalog):
+    def __init__(
+        self,
+        catalog: pd.DataFrame = None,
+        filename: str = None,
+        time_columns: list[str] = ["Year", "Month", "Day", "Hour", "Minute", "Second"],
+        time_alignment: Literal[
+            "centroid", "start"
+        ] = "centroid",  # assumes SSEs times are centroid-time
+    ):
+        """
+        Swarm catalog.
+        """
+        
+        if catalog is not None:
+            self.catalog = catalog
+        else:
+            assert filename is not None and time_columns is not None
+            _catalog = self.read_catalog(filename)
+            self._time_columns = time_columns
+
+            _catalog =  self._add_time_column(_catalog, "time")
+        
+        
+        super().__init__(catalog, filename, time_columns, time_alignment)
+        
+        return self
+
+class NishikawaSwarmCatalog(SwarmCatalog):
+
+    def __init__(self):
+        self.dir_name = "Datasets/Swarm_datasets/Global"
+        self.file_name = "nishikawa2017S3.txt"
+        
+        _catalog = self.read_catalog(os.path.join(self.dir_name, self.file_name))
+        self._time_columns = ["Year", "Month", "Day", "Hour", "Minute", "Second"]
+        _catalog =  self._add_time_column(_catalog, "time")
+        _catalog["mag"] = 4.5 # Use dummy magnitude (the catalog completeness used for the analysis in Nishikawa and Ide 2017)
+        super().__init__(catalog=_catalog)
+    
+    @staticmethod    
+    def read_catalog(filename):
+        """
+        Reads in a global swarm catalog and returns a pandas dataframe, with the following columns:
+        
+        Region_name Time_period Cluseter_id Lon(deg) Lat(deg) Depth(km) Magnitude Year Month Day Hour Minute Second
+        """
+        
+        df = pd.read_csv(
+            filename,
+            skiprows=1,
+            sep=' ',
+            index_col=False,
+            names= [ 
+                "Region_name",
+                "Time_period",
+                "Cluseter_id",
+                "lon",
+                "lat",
+                "depth",
+                "Magnitude",
+                "Year",
+                "Month",
+                "Day",
+                "Hour",
+                "Minute",
+                "Second",
+            ],
+        )
+        
+        # remove 360 from longitudes that are greater than 180 degrees
+        df.loc[df["lon"] > 180, "lon"] = df.loc[df["lon"] > 180, "lon"] - 360 
+        
+        return df
 
 # %%
 
@@ -1102,5 +1232,4 @@ if __name__ == "__main__":
         [getattr(catalog, k)() for k in plotting_methods]
 
     combined_catalog = japan_catalog + rousset_catalog
-
-# %%
+    
