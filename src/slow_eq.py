@@ -15,6 +15,10 @@ from obspy.clients.fdsn import Client
 from typing import Optional, Literal, List, Tuple
 import copy
 import warnings
+from pathlib import Path
+import src
+
+base_dir = Path(__file__).parents[1]
 
 EARTH_RADIUS_KM = 6371
 DAY_PER_YEAR = 365
@@ -794,7 +798,7 @@ class Scaling:
 
 class JapanSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self, files=None):
-        self.dir_name = "Datasets/Slow_slip_datasets/Japan/"
+        self.dir_name = os.path.join(base_dir,"Datasets/Slow_slip_datasets/Japan/"),
         _catalog = self.read_catalog(self.dir_name, files)
         self.files = files
         self.catalog = self._add_time_column(_catalog, "time")
@@ -859,7 +863,7 @@ class JapanSlowSlipCatalog(SlowSlipCatalog):
 
 class RoussetSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
-        self.dir_name = "Datasets/Slow_slip_datasets/Mexico/"
+        self.dir_name = os.path.join(base_dir,"Datasets/Slow_slip_datasets/Mexico/"),
         self.file_name = "Rousset2017.txt"
         _catalog = self.read_catalog(self.dir_name, self.file_name)
         self.catalog = self._add_time_column(_catalog, "time")
@@ -912,7 +916,7 @@ class RoussetSlowSlipCatalog(SlowSlipCatalog):
 class XieSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.dir_name = os.path.join(
-            os.path.dirname(__file__), "Datasets/Slow_slip_datasets/Costa_Rica/"
+            os.path.dirname(__file__), os.path.join(base_dir,"Datasets/Slow_slip_datasets/Costa_Rica/"),
         )
         self.file_name = "Xie2020.csv"
 
@@ -968,7 +972,7 @@ class XieSlowSlipCatalog(SlowSlipCatalog):
 class WilliamsSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.dir_name = os.path.join(
-            os.path.dirname(__file__), "Datasets/Slow_slip_datasets/New_Zealand/"
+            os.path.dirname(__file__), os.path.join(base_dir,"Datasets/Slow_slip_datasets/New_Zealand/"),
         )
         self.file_name = "v005_sf_nm_test018_m1_catalog.txt"
 
@@ -1013,7 +1017,7 @@ class WilliamsSlowSlipCatalog(SlowSlipCatalog):
 class IkariSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.dir_name = os.path.join(
-            os.path.dirname(__file__), "Datasets/Slow_slip_datasets/New_Zealand"
+            os.path.dirname(__file__), os.path.join(base_dir,"Datasets/Slow_slip_datasets/New_Zealand"),
         )
         self.file_name = "ikari2020.csv"
 
@@ -1065,7 +1069,7 @@ class IkariSlowSlipCatalog(SlowSlipCatalog):
 class MichelSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.dir_name = os.path.join(
-            os.path.dirname(__file__), "Datasets/Slow_slip_datasets/Cascadia"
+            os.path.dirname(__file__), os.path.join(base_dir,"Datasets/Slow_slip_datasets/Cascadia"),
         )
         self.file_name = "Michel2018.csv"
 
@@ -1167,7 +1171,7 @@ class SwarmCatalog(SlowSlipCatalog):
 class NishikawaSwarmCatalog(SwarmCatalog):
 
     def __init__(self):
-        self.dir_name = "Datasets/Swarm_datasets/Global"
+        self.dir_name = os.path.join(base_dir,"Datasets/Swarm_datasets/Global"),
         self.file_name = "nishikawa2017S3.txt"
         
         _catalog = self.read_catalog(os.path.join(self.dir_name, self.file_name))
