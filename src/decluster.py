@@ -3,11 +3,13 @@ from src.slow_eq import Catalog
 import numpy as np
 import eq
 import torch
+import warnings
 
 
 def time_torchETAS_decluster(
     event_catalog: Catalog,
-):
+    burn_in: float = 0.1,
+) -> Catalog:
     t_start = 0
     t_end = event_catalog.duration / np.timedelta64(1, "D")
 
@@ -23,8 +25,7 @@ def time_torchETAS_decluster(
     seq = eq.data.Sequence(
         inter_times=torch.as_tensor(inter_times, dtype=torch.float32),
         t_start=t_start,
-        t_nll_start=t_end
-        / 5,  # 20% of the data is used to burn in the model but does not contribute to the loss
+        t_nll_start=t_end * burn_in,
         t_end=t_end,
         mag=torch.as_tensor(event_catalog.catalog.mag.values, dtype=torch.float32),
     )
@@ -36,11 +37,22 @@ def time_torchETAS_decluster(
         base_rate_init=len(event_catalog) / t_end,
     )
     trainer = pl.Trainer(max_epochs=400, devices=1, accelerator="mps")
+
+    # turn off pytorch lightning warning messages:
+    # Filter annoying warnings by PytorchLightning
+    warnings.filterwarnings(
+        "ignore", ".*You defined a `validation_step` but have no `val_dataloader`*"
+    )
+    warnings.filterwarnings("ignore", ".*does not have many workers.*")
+    warnings.filterwarnings("ignore", ".*has `shuffle=True`, it is strongly*")
+
     trainer.fit(model, dl)
 
-    mu, k, c, p, alpha = [
-        getattr(model, param).item() for param in ["mu", "k", "c", "p", "alpha"]
-    ]
+    parameter_str = ["mu", "k", "c", "p", "alpha"]
+
+    mu, k, c, p, alpha = [getattr(model, param).item() for param in parameter_str]
+
+    [print(f"{param}: {getattr(model, param).item(): .2f}") for param in parameter_str]
 
     etas_rate = lambda t, ti, mi: mu + np.sum(
         k * 10 ** (alpha * (mi - event_catalog.mag_completeness)) / (t - ti + c) ** p
