@@ -9,10 +9,11 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import seaborn as sns
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
+import cartopy
+from cartopy.geodesic import Geodesic
+import shapely
 from obspy.clients.fdsn import Client
-from typing import Optional, Literal, List, Tuple
+from typing import Optional, Literal, Tuple
 import copy
 import warnings
 from pathlib import Path
@@ -339,20 +340,16 @@ class Catalog:
 
         return ax
 
-    def plot_map(
-        self, 
-        columm: str = "mag", 
-        scatter_kwarg: dict = None, 
+    def plot_base_map(
+        self,
         extent: Optional[Tuple[float, float,float, float]] = None, 
-        ax=None, 
-    ) -> plt.axes.Axes:
-
+        ax=None,
+    )-> plt.axes.Axes: 
+        
         if ax is None:
-            fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
-        if scatter_kwarg is None:
-            scatter_kwarg = {}
+            _, ax = plt.subplots(subplot_kw={"projection": cartopy.crs.PlateCarree()})
 
-        usemap_proj = ccrs.PlateCarree()
+        usemap_proj = cartopy.crs.PlateCarree()
         # set appropriate extents: (lon_min, lon_max, lat_min, lat_max)
         if extent is None:
             buffer = 1
@@ -387,34 +384,48 @@ class Catalog:
 
         ax.set_extent(
             extent,
-            crs=ccrs.PlateCarree(),
+            crs=cartopy.crs.PlateCarree(),
         )
 
-        ax.add_feature(cfeature.LAND, color="lightgray")
-        ax.add_feature(cfeature.OCEAN)
-        ax.add_feature(cfeature.COASTLINE)
-        ax.add_feature(cfeature.BORDERS, linestyle=":")
+        ax.add_feature(cartopy.feature.LAND, color="lightgray")
+        ax.add_feature(cartopy.feature.OCEAN)
+        ax.add_feature(cartopy.feature.COASTLINE)
+        ax.add_feature(cartopy.feature.BORDERS, linestyle=":")
 
         # plot grid lines
         ax.gridlines(draw_labels=True, crs=usemap_proj, color="gray", linewidth=0.3)
+        
+        ax.set_xlabel("Longitude")
+        ax.set_ylabel("Latitude")
+        
+        return ax
+    
+    def plot_map(
+        self, 
+        columm: str = "mag", 
+        scatter_kwarg: dict = None, 
+        extent: Optional[Tuple[float, float,float, float]] = None, 
+        ax=None, 
+    ) -> plt.axes.Axes:
+        
+        ax = self.plot_base_map(extent=extent, ax=ax)
 
+        if scatter_kwarg is None:
+            scatter_kwarg = {}
         default_scatter_kawrg = {
             "color": "lightgray",
             "marker": "o",
             "edgecolors": "brown",
-            "transform": ccrs.PlateCarree(),
+            "transform": cartopy.crs.PlateCarree(),
         }
-
         default_scatter_kawrg.update(scatter_kwarg)
+        
         ax.scatter(
             self.catalog["lon"],
             self.catalog["lat"],
             s=self.catalog[columm],
             **default_scatter_kawrg,
         )
-
-        ax.set_xlabel("Longitude")
-        ax.set_ylabel("Latitude")
 
         return ax
 
@@ -450,7 +461,7 @@ class Catalog:
         if ax is None:
             fig = plt.figure(figsize=(6.5, 7))
             gs = fig.add_gridspec(4, 3)
-            ax1 = fig.add_subplot(gs[0:2, 0:2], projection=ccrs.PlateCarree())
+            ax1 = fig.add_subplot(gs[0:2, 0:2], projection=cartopy.crs.PlateCarree())
             ax2 = fig.add_subplot(gs[0:2, 2])
             ax3 = fig.add_subplot(gs[2, :])
             ax4 = fig.add_subplot(gs[3, :])
@@ -770,6 +781,39 @@ class SlowSlipCatalog(Catalog):
             xlim=np.array(axb.get_xlim()[::-1]) * 10,
             xticks=[],
         )
+
+        return ax
+
+    def plot_map(
+        self, 
+        columm: str = "mag", 
+        scatter_kwarg: dict = None, 
+        extent: Optional[Tuple[float, float,float, float]] = None, 
+        ax=None, 
+    ) -> plt.axes.Axes:
+    
+        ax = self.plot_base_map(extent=extent, ax=ax)
+
+        if scatter_kwarg is None:
+            scatter_kwarg = {}
+        default_scatter_kawrg = {
+            "color": "indianred",
+            "edgecolors": None,
+            "crs": cartopy.crs.PlateCarree(),
+            "alpha": 0.2,
+        }
+        default_scatter_kawrg.update(scatter_kwarg)
+        geoms = []
+        gd = Geodesic()
+        for lon, lat, R in zip(
+            self.catalog["lon"],
+            self.catalog["lat"],
+            Scaling.magnitude_to_size(self.catalog[columm], self._stress_drop, "m")/2, # divide by 2 to get radius
+        ):
+            cp = gd.circle(lon=lon, lat=lat, radius=R)
+            geoms.append(shapely.geometry.Polygon(cp))
+        
+        ax.add_geometries(geoms, **default_scatter_kawrg)
 
         return ax
 
