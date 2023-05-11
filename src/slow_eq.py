@@ -227,11 +227,11 @@ class Catalog:
         return new
 
     def get_neighboring_indices(
-        self, other: Catalog, buffer_radius_km: float = 50.0
+        self, other: Catalog, buffer_radius_km: np.typing.ArrayLike = 50.0, return_distances: bool = False, 
     ) -> np.ndarray:
         """gets the indices of events in `other` that are within `buffer_radius_km` from self.
 
-        The ouput therefore has dimensions [len(other),k] where k is the number of neibors for each event.
+        The ouput therefore has dimensions [len(other),k] where k is the number of neighbors for each event.
 
         For instance:
 
@@ -239,18 +239,35 @@ class Catalog:
         [other[indices] for indices in self.get_neighboring_indices(other)]
         ```
 
-        Returns a list of catalogs for each neighborhood of events in self."""
+        Returns a list of catalogs for each neighborhood of events in self.
+        
+        If `return_distances` is True, then the output is a tuple of (indices, distances) where distances is a list of arrays of distances to each neighbor.
+        
+        """
 
         tree = BallTree(
-            np.deg2rad(other.catalog[["lat", "lon"]]).values.T,
+            np.deg2rad(other.catalog[["lat", "lon"]]).values,
             metric="haversine",
         )
-
-        return tree.query_radius(
-            np.deg2rad(self.catalog[["lat", "lon"]]).values.T,
-            r=buffer_radius_km / EARTH_RADIUS_KM,
-            return_distance=False,
-        )
+        if return_distances is True:
+            I,R = tree.query_radius(
+                np.deg2rad(self.catalog[["lat", "lon"]]).values,
+                r=buffer_radius_km / EARTH_RADIUS_KM,
+                return_distance=return_distances,
+            )
+            
+            R *= EARTH_RADIUS_KM
+            
+            OUTPUT = (I,R)
+        
+        else:  
+            OUTPUT = tree.query_radius(
+                np.deg2rad(self.catalog[["lat", "lon"]]).values,
+                r=buffer_radius_km / EARTH_RADIUS_KM,
+                return_distance=return_distances,
+            )
+        
+        return OUTPUT
 
     def plot_time_series(self, column: str = "mag", ax=None) -> plt.axes.Axes:
         """
@@ -413,7 +430,7 @@ class Catalog:
         if scatter_kwarg is None:
             scatter_kwarg = {}
         default_scatter_kawrg = {
-            "color": "lightgray",
+            "c": "lightgray",
             "marker": "o",
             "edgecolors": "brown",
             "transform": cartopy.crs.PlateCarree(),
@@ -611,7 +628,7 @@ class EarthquakeCatalog(Catalog):
 
         # Write the earthquakes to a file
         f = open(filename, "w")
-        f.write("time,lat,lon,dep,mag\n")
+        f.write("time,lat,lon,depth,mag\n")
         for event in cat:
             loc = event.preferred_origin()
             lat = loc.latitude
@@ -765,7 +782,6 @@ class SlowSlipCatalog(Catalog):
 
         ax.set(
             xlabel="Time",
-            yticks=[],
             ylabel="Distance along cross-section",
         )
 
