@@ -36,7 +36,14 @@ def time_torchETAS_decluster(
         mag_completeness=event_catalog.mag_completeness,
         base_rate_init=len(event_catalog) / t_end,
     )
-    trainer = pl.Trainer(max_epochs=400, devices=1, accelerator="mps")
+
+    trainer = pl.Trainer(
+        max_epochs=400,
+        devices=1,
+        accelerator="mps",
+        enable_checkpointing=False,
+        logger=False,
+    )
 
     # turn off pytorch lightning warning messages:
     # Filter annoying warnings by PytorchLightning
