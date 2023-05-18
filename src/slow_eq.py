@@ -23,7 +23,7 @@ base_dir = Path(__file__).parents[1]
 EARTH_RADIUS_KM = 6371
 DAY_PER_YEAR = 365
 SEC_PER_DAY = 86400
-    
+
 
 def get_xyz_from_lonlat(
     lon: np.ndarray, lat: np.ndarray, depth_km: np.ndarray = None
@@ -173,7 +173,7 @@ class Catalog:
         new.__update__()
 
         return new
-    
+
     def __radd__(self, other):
         return self.__add__(other)
 
@@ -225,7 +225,10 @@ class Catalog:
         return new
 
     def get_neighboring_indices(
-        self, other: Catalog, buffer_radius_km: np.typing.ArrayLike = 50.0, return_distances: bool = False, 
+        self,
+        other: Catalog,
+        buffer_radius_km: np.typing.ArrayLike = 50.0,
+        return_distances: bool = False,
     ) -> np.ndarray:
         """gets the indices of events in `other` that are within `buffer_radius_km` from self.
 
@@ -238,9 +241,9 @@ class Catalog:
         ```
 
         Returns a list of catalogs for each neighborhood of events in self.
-        
+
         If `return_distances` is True, then the output is a tuple of (indices, distances) where distances is a list of arrays of distances to each neighbor.
-        
+
         """
 
         tree = BallTree(
@@ -248,23 +251,23 @@ class Catalog:
             metric="haversine",
         )
         if return_distances is True:
-            I,R = tree.query_radius(
+            I, R = tree.query_radius(
                 np.deg2rad(self.catalog[["lat", "lon"]]).values,
                 r=buffer_radius_km / EARTH_RADIUS_KM,
                 return_distance=return_distances,
             )
-            
+
             R *= EARTH_RADIUS_KM
-            
-            OUTPUT = (I,R)
-        
-        else:  
+
+            OUTPUT = (I, R)
+
+        else:
             OUTPUT = tree.query_radius(
                 np.deg2rad(self.catalog[["lat", "lon"]]).values,
                 r=buffer_radius_km / EARTH_RADIUS_KM,
                 return_distance=return_distances,
             )
-        
+
         return OUTPUT
 
     def plot_time_series(self, column: str = "mag", ax=None) -> plt.axes.Axes:
@@ -273,9 +276,9 @@ class Catalog:
         """
         if ax is None:
             fig, ax = plt.subplots()
-            
+
         if column == "mag" and self.mag_completeness is not None:
-            bottom = self.mag_completeness-0.05
+            bottom = self.mag_completeness - 0.05
         else:
             bottom = 0
 
@@ -283,7 +286,7 @@ class Catalog:
             self.catalog["time"],
             self.catalog[column],
             markerfmt=".",
-            bottom = bottom,
+            bottom=bottom,
         )
         plt.setp(stems, linewidth=0.5, alpha=0.5)
         plt.setp(markers, markersize=0.5, alpha=0.5)
@@ -330,7 +333,7 @@ class Catalog:
             p2 - p1
         )
 
-        marker_size = getattr(self.catalog,column) if isinstance(column,str) else 1
+        marker_size = getattr(self.catalog, column) if isinstance(column, str) else 1
 
         ax.scatter(
             self.catalog.time,
@@ -366,10 +369,12 @@ class Catalog:
         kwargs: dict = None,
         ax: Optional[plt.axes.Axes] = None,
     ) -> plt.axes.Axes:
-        
-        for column_name in ["lon", "lat", "depth",column]:
-            assert column_name in self.catalog.columns, f"column {column} not in catalog" # TODO: make this assertion as part of the catalog class itself?
-        
+
+        for column_name in ["lon", "lat", "depth", column]:
+            assert (
+                column_name in self.catalog.columns
+            ), f"column {column} not in catalog"  # TODO: make this assertion as part of the catalog class itself?
+
         if ax is None:
             fig, ax = plt.subplots()
 
@@ -380,7 +385,7 @@ class Catalog:
         default_kwargs = {
             "alpha": 0.5,
             "color": "C0",
-            "s": getattr(self.catalog,column),
+            "s": getattr(self.catalog, column) if isinstance(column, str) else 1,
         }
 
         if kwargs is None:
@@ -396,30 +401,29 @@ class Catalog:
         distance_along_section = np.squeeze(
             np.matmul((x - p1), (p2 - p1).T) / np.linalg.norm(p2 - p1)
         )
-        
+
         depth = self.catalog.depth.values
-        
+
         if width_km is not None:
-            distance_orthogonal_to_section = np.sqrt(np.linalg.norm(x - p1, axis=1)**2 - distance_along_section**2)
+            distance_orthogonal_to_section = np.sqrt(
+                np.linalg.norm(x - p1, axis=1) ** 2 - distance_along_section**2
+            )
             index = distance_orthogonal_to_section < width_km
             distance_along_section = distance_along_section[index]
             depth = depth[index]
-        
-
-        marker_size = getattr(self.catalog,column) if isinstance(column,str) else 1
 
         sh = ax.scatter(
             distance_along_section,
             depth,
             **kwargs,
         )
-        
+
         ax.set(
             ylabel="Depth (km)",
             xlabel="Distance along section (km)",
-            ylim=(np.max(depth),0),
+            ylim=(np.max(depth), 0),
         )
-        
+
         if plot_histogram is True:
             # horizonta histogram of distance along section on the right side of the plot pointing left
             axb = ax.twiny()
@@ -436,15 +440,14 @@ class Catalog:
                 xticks=[],
             )
 
-        return ax       
-        
+        return ax
 
     def plot_base_map(
         self,
-        extent: Optional[Tuple[float, float,float, float]] = None, 
+        extent: Optional[Tuple[float, float, float, float]] = None,
         ax=None,
-    )-> plt.axes.Axes: 
-        
+    ) -> plt.axes.Axes:
+
         if ax is None:
             _, ax = plt.subplots(subplot_kw={"projection": cartopy.crs.PlateCarree()})
 
@@ -493,20 +496,20 @@ class Catalog:
 
         # plot grid lines
         ax.gridlines(draw_labels=True, crs=usemap_proj, color="gray", linewidth=0.3)
-        
+
         ax.set_xlabel("Longitude")
         ax.set_ylabel("Latitude")
-        
+
         return ax
-    
+
     def plot_map(
-        self, 
-        columm: str = "mag", 
-        scatter_kwarg: dict = None, 
-        extent: Optional[Tuple[float, float,float, float]] = None, 
-        ax=None, 
+        self,
+        columm: str = "mag",
+        scatter_kwarg: dict = None,
+        extent: Optional[Tuple[float, float, float, float]] = None,
+        ax=None,
     ) -> plt.axes.Axes:
-        
+
         ax = self.plot_base_map(extent=extent, ax=ax)
 
         if scatter_kwarg is None:
@@ -518,7 +521,7 @@ class Catalog:
             "transform": cartopy.crs.PlateCarree(),
         }
         default_scatter_kawrg.update(scatter_kwarg)
-        
+
         ax.scatter(
             self.catalog["lon"],
             self.catalog["lat"],
@@ -622,7 +625,7 @@ class EarthquakeCatalog(Catalog):
             self.catalog = catalog
 
         super().__init__(self.catalog)
-        
+
         self._stress_drop = 3e6  # Pa
 
     @staticmethod
@@ -654,36 +657,38 @@ class EarthquakeCatalog(Catalog):
         results include only that catalog's "primary origin" and
         "primary magnitude" for each event.
         """
-        
-        
+
         if longitude_range[1] > 180:
             longitude_range[1] = 180
             warnings.warn("Longitude range exceeds 180 degrees. Setting to 180.")
-            
+
         if longitude_range[0] < -180:
             longitude_range[0] = -180
             warnings.warn("Longitude range exceeds -180 degrees. Setting to -180.")
-        
+
         def is_within(lat_range_querry, lon_range_querry, lat_range, lon_range):
             """
             Checks if a point is within a latitude and longitude range.
             """
-            return (lat_range[0] <= lat_range_querry[0] <= lat_range[1]) and (
-                lon_range[0] <= lon_range_querry[0] <= lon_range[1]) and (
-                lat_range[0] <= lat_range_querry[1] <= lat_range[1]) and (
-                lon_range[0] <= lon_range_querry[1] <= lon_range[1]
+            return (
+                (lat_range[0] <= lat_range_querry[0] <= lat_range[1])
+                and (lon_range[0] <= lon_range_querry[0] <= lon_range[1])
+                and (lat_range[0] <= lat_range_querry[1] <= lat_range[1])
+                and (lon_range[0] <= lon_range_querry[1] <= lon_range[1])
             )
-        
+
         local_client_coverage = {
             "GEONET": [[-49.18, -32.28], [163.52, 179.99]],
         }
 
-        # Note that using local client supersedes the any specified default_client_name 
+        # Note that using local client supersedes the any specified default_client_name
         if use_local_client:
             ## use local clients if lat and long are withing the coverage of the local catalogs
             index = []
-            for i,key in enumerate(local_client_coverage.keys()):
-                if is_within(latitude_range, longitude_range, *local_client_coverage[key]):
+            for i, key in enumerate(local_client_coverage.keys()):
+                if is_within(
+                    latitude_range, longitude_range, *local_client_coverage[key]
+                ):
                     index.append(i)
                 else:
                     index.append(i)
@@ -693,13 +698,12 @@ class EarthquakeCatalog(Catalog):
             elif len(index) == 1:
                 if default_client_name is not None:
                     warnings.warn("Using local client instead of default client")
-                client_name=list(local_client_coverage.keys())[index[0]]
+                client_name = list(local_client_coverage.keys())[index[0]]
             else:
                 client_name = default_client_name
         else:
             client_name = default_client_name
-        
-    
+
         querry = dict(
             starttime=starttime,
             endtime=endtime,
@@ -707,20 +711,23 @@ class EarthquakeCatalog(Catalog):
             minlatitude=latitude_range[0],
             maxlatitude=latitude_range[1],
             minlongitude=longitude_range[0],
-            maxlongitude=longitude_range[1],                
+            maxlongitude=longitude_range[1],
         )
-        
+
         if not (
-            reload is False and 
-            os.path.exists(filename) and 
-            np.load(os.path.splitext(filename)[0] + "_metadata.npy", allow_pickle=True).item() == querry
+            reload is False
+            and os.path.exists(filename)
+            and np.load(
+                os.path.splitext(filename)[0] + "_metadata.npy", allow_pickle=True
+            ).item()
+            == querry
         ):
             warnings.warn(f"Reloading {filename}")
-            
-            # Use obspy api to ge  events from the IRIS earthquake client    
+
+            # Use obspy api to ge  events from the IRIS earthquake client
             client = Client(client_name)
             cat = client.get_events(**querry)
-            
+
             # Write the earthquakes to a file
             f = open(filename, "w")
             f.write("time,lat,lon,depth,mag\n")
@@ -733,21 +740,95 @@ class EarthquakeCatalog(Catalog):
                 mag = event.preferred_magnitude().mag
                 f.write("{},{},{},{},{}\n".format(time, lat, lon, dep, mag))
             f.close()
-            
+
             # Save querry to metadatafile
-            np.save(os.path.splitext(filename)[0] + "_metadata.npy",querry)
+            np.save(os.path.splitext(filename)[0] + "_metadata.npy", querry)
         else:
             warnings.warn(f"Using existing {filename}")
 
         df = pd.read_csv(filename, na_values="None")
-        
+
         # remove rows with NaN values, reset index and provide a warning is any rows were removed
         if df.isna().values.any():
-            warnings.warn(f"{sum(sum(df.isna().values))} NaN values found in catalog. Removing rows with NaN values.")
+            warnings.warn(
+                f"{sum(sum(df.isna().values))} NaN values found in catalog. Removing rows with NaN values."
+            )
             df = df.dropna()
             df = df.reset_index(drop=True)
-        
-        df.depth = df.depth/1000  # convert depth from m to km
+
+        df.depth = df.depth / 1000  # convert depth from m to km
+
+        return df
+
+
+class ESTEarthquakeCatalog(EarthquakeCatalog):
+    def __init__(self) -> Catalog:
+
+        self.dir_name = os.path.join(
+            os.path.join(base_dir, "Datasets/Seismicity_datasets/Japan")
+        )
+        self.file_name = "est.csv"
+        _catalog = self.read_catalog(self.dir_name, self.file_name)
+
+        super().__init__(_catalog)
+
+    @staticmethod
+    def read_catalog(dir_name, file_name):
+        """
+        Reads in a EST catalog and returns a pandas dataframe. Read each file in
+         directory and concatenate them into one dataframe.
+        """
+        full_file_name = os.path.join(dir_name, file_name)
+
+        column_names = [
+            "datetime",
+            "lat",
+            "lon",
+            "depth",
+            "mag",
+            "hypoflag_est",
+            "dotime_est",
+            "dolat_est",
+            "dolon_est",
+            "dodep_est",
+            "std_ditp_est",
+            "std_dits_est",
+            "ppick_est",
+            "19_est",
+            "20_est",
+            "bothps_est",
+            "22_est",
+            "23_est",
+            "24_est",
+            "pspicknear_est",
+            "26_est",
+            "27_est",
+            "fname_est",
+            "event_idx_est",
+            "event_idx_man",
+            "datetime_man",
+            "lat_man",
+            "lon_man",
+            "dep_man",
+            "mag_man",
+            "dt",
+            "dlat",
+            "dlon",
+            "dho",
+            "ddep",
+            "dmag",
+        ]
+
+        df = pd.read_csv(
+            full_file_name,
+            header=0,
+            sep=",",
+            skiprows=1,
+            names=column_names,
+            engine="python",
+        )
+
+        df["time"] = pd.to_datetime(df.datetime)
 
         return df
 
@@ -910,13 +991,13 @@ class SlowSlipCatalog(Catalog):
         return ax
 
     def plot_map(
-        self, 
-        columm: str = "mag", 
-        scatter_kwarg: dict = None, 
-        extent: Optional[Tuple[float, float,float, float]] = None, 
-        ax=None, 
+        self,
+        columm: str = "mag",
+        scatter_kwarg: dict = None,
+        extent: Optional[Tuple[float, float, float, float]] = None,
+        ax=None,
     ) -> plt.axes.Axes:
-    
+
         ax = self.plot_base_map(extent=extent, ax=ax)
 
         if scatter_kwarg is None:
@@ -933,13 +1014,14 @@ class SlowSlipCatalog(Catalog):
         for lon, lat, R in zip(
             self.catalog["lon"],
             self.catalog["lat"],
-            Scaling.magnitude_to_size(self.catalog[columm], self._stress_drop, "m")/2, # divide by 2 to get radius
+            Scaling.magnitude_to_size(self.catalog[columm], self._stress_drop, "m")
+            / 2,  # divide by 2 to get radius
         ):
             if np.isnan(R):
                 continue
             cp = gd.circle(lon=lon, lat=lat, radius=R)
             geoms.append(shapely.geometry.Polygon(cp))
-        
+
         ax.add_geometries(geoms, **default_scatter_kawrg)
 
         return ax
@@ -977,7 +1059,7 @@ class Scaling:
 
 class JapanSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self, files=None):
-        self.dir_name = os.path.join(base_dir,"Datasets/Slow_slip_datasets/Japan/")
+        self.dir_name = os.path.join(base_dir, "Datasets/Slow_slip_datasets/Japan/")
         _catalog = self.read_catalog(self.dir_name, files)
         self.files = files
         self.catalog = self._add_time_column(_catalog, "time")
@@ -1041,7 +1123,7 @@ class JapanSlowSlipCatalog(SlowSlipCatalog):
 
 class RoussetSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
-        self.dir_name = os.path.join(base_dir,"Datasets/Slow_slip_datasets/Mexico/")
+        self.dir_name = os.path.join(base_dir, "Datasets/Slow_slip_datasets/Mexico/")
         self.file_name = "Rousset2017.txt"
         _catalog = self.read_catalog(self.dir_name, self.file_name)
         self.catalog = self._add_time_column(_catalog, "time")
@@ -1094,7 +1176,8 @@ class RoussetSlowSlipCatalog(SlowSlipCatalog):
 class XieSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.dir_name = os.path.join(
-            os.path.dirname(__file__), os.path.join(base_dir,"Datasets/Slow_slip_datasets/Costa_Rica/"),
+            os.path.dirname(__file__),
+            os.path.join(base_dir, "Datasets/Slow_slip_datasets/Costa_Rica/"),
         )
         self.file_name = "Xie2020.csv"
 
@@ -1150,7 +1233,8 @@ class XieSlowSlipCatalog(SlowSlipCatalog):
 class WilliamsSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.dir_name = os.path.join(
-            os.path.dirname(__file__), os.path.join(base_dir,"Datasets/Slow_slip_datasets/New_Zealand/"),
+            os.path.dirname(__file__),
+            os.path.join(base_dir, "Datasets/Slow_slip_datasets/New_Zealand/"),
         )
         self.file_name = "v005_sf_nm_test018_m1_catalog.txt"
 
@@ -1181,7 +1265,7 @@ class WilliamsSlowSlipCatalog(SlowSlipCatalog):
 
         df["lat"] = df["Lat_geom"]
         df["lon"] = df["Lon_geom"]
-        df["depth"] = -df["Z_geom"] # Note minus sign
+        df["depth"] = -df["Z_geom"]  # Note minus sign
         df["mag"] = df["Mw"]
         df["year"] = df["Start_year"]
         df["month"] = df["Start_month"]
@@ -1195,7 +1279,8 @@ class WilliamsSlowSlipCatalog(SlowSlipCatalog):
 class IkariSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.dir_name = os.path.join(
-            os.path.dirname(__file__), os.path.join(base_dir,"Datasets/Slow_slip_datasets/New_Zealand"),
+            os.path.dirname(__file__),
+            os.path.join(base_dir, "Datasets/Slow_slip_datasets/New_Zealand"),
         )
         self.file_name = "ikari2020.csv"
 
@@ -1247,7 +1332,8 @@ class IkariSlowSlipCatalog(SlowSlipCatalog):
 class MichelSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.dir_name = os.path.join(
-            os.path.dirname(__file__), os.path.join(base_dir,"Datasets/Slow_slip_datasets/Cascadia")
+            os.path.dirname(__file__),
+            os.path.join(base_dir, "Datasets/Slow_slip_datasets/Cascadia"),
         )
         self.file_name = "Michel2018.csv"
 
@@ -1318,6 +1404,7 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
 
         return df
 
+
 class SwarmCatalog(Catalog):
     def __init__(
         self,
@@ -1328,7 +1415,7 @@ class SwarmCatalog(Catalog):
         """
         Swarm catalog.
         """
-        
+
         if catalog is not None:
             _catalog = catalog
         else:
@@ -1336,11 +1423,10 @@ class SwarmCatalog(Catalog):
             _catalog = self.read_catalog(filename)
             self._time_columns = time_columns
 
-            _catalog =  self._add_time_column(_catalog, "time")
-        
-        
+            _catalog = self._add_time_column(_catalog, "time")
+
         super().__init__(_catalog)
-        
+
         return self
 
     def _add_time_column(self, df, column):
@@ -1350,32 +1436,34 @@ class SwarmCatalog(Catalog):
         df[column] = pd.to_datetime(df[self._time_columns])
         return df
 
-class NishikawaSwarmCatalog(SwarmCatalog):
 
+class NishikawaSwarmCatalog(SwarmCatalog):
     def __init__(self):
-        self.dir_name = os.path.join(base_dir,"Datasets/Swarm_datasets/Global")
+        self.dir_name = os.path.join(base_dir, "Datasets/Swarm_datasets/Global")
         self.file_name = "nishikawa2017S3.txt"
-        
+
         _catalog = self.read_catalog(os.path.join(self.dir_name, self.file_name))
         self._time_columns = ["Year", "Month", "Day", "Hour", "Minute", "Second"]
-        _catalog =  self._add_time_column(_catalog, "time")
-        _catalog["mag"] = 4.5 # Use dummy magnitude (the catalog completeness used for the analysis in Nishikawa and Ide 2017)
+        _catalog = self._add_time_column(_catalog, "time")
+        _catalog[
+            "mag"
+        ] = 4.5  # Use dummy magnitude (the catalog completeness used for the analysis in Nishikawa and Ide 2017)
         super().__init__(catalog=_catalog)
-    
-    @staticmethod    
+
+    @staticmethod
     def read_catalog(filename):
         """
         Reads in a global swarm catalog and returns a pandas dataframe, with the following columns:
-        
+
         Region_name Time_period Cluseter_id Lon(deg) Lat(deg) Depth(km) Magnitude Year Month Day Hour Minute Second
         """
-        
+
         df = pd.read_csv(
             filename,
             skiprows=1,
-            sep=' ',
+            sep=" ",
             index_col=False,
-            names= [ 
+            names=[
                 "Region_name",
                 "Time_period",
                 "Cluseter_id",
@@ -1391,13 +1479,14 @@ class NishikawaSwarmCatalog(SwarmCatalog):
                 "Second",
             ],
         )
-        
+
         # remove 360 from longitudes that are greater than 180 degrees
-        df.loc[df["lon"] > 180, "lon"] = df.loc[df["lon"] > 180, "lon"] - 360 
-        
+        df.loc[df["lon"] > 180, "lon"] = df.loc[df["lon"] > 180, "lon"] - 360
+
         return df
 
 
+# %%
 if __name__ == "__main__":
 
     # A few tests to ensure that everything still runs smoothly:
@@ -1415,4 +1504,3 @@ if __name__ == "__main__":
         [getattr(catalog, k)() for k in plotting_methods]
 
     combined_catalog = japan_catalog + rousset_catalog
-    
