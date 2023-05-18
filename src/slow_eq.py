@@ -91,8 +91,6 @@ class Catalog:
             ), "Invalid keys in units"
             self.units.update(units)
 
-        self._stress_drop = 3e9  # Pa
-
         self.__update__()
 
     def __update__(self):
@@ -302,6 +300,7 @@ class Catalog:
         p1: list[float, float] = None,
         p2: list[float, float] = None,
         column: str = "mag",
+        plot_histogram: bool = True,
         kwargs: dict = None,
         ax: Optional[plt.axes.Axes] = None,
     ) -> plt.axes.Axes:
@@ -337,25 +336,108 @@ class Catalog:
             self.catalog.time,
             distance_along_section,
             **kwargs,
-            label="Unknown duration and size",
             s=marker_size,
         )
 
-        # horizonta histogram of distance along section on the right side of the plot pointing left
-        axb = ax.twiny()
-        axb.hist(
-            distance_along_section,
-            orientation="horizontal",
-            density=True,
-            alpha=0.3,
-        )
+        if plot_histogram is True:
+            # horizonta histogram of distance along section on the right side of the plot pointing left
+            axb = ax.twiny()
+            axb.hist(
+                distance_along_section,
+                orientation="horizontal",
+                density=True,
+                alpha=0.3,
+            )
 
-        axb.set(
-            xlim=np.array(axb.get_xlim()[::-1]) * 10,
-            xticks=[],
-        )
+            axb.set(
+                xlim=np.array(axb.get_xlim()[::-1]) * 10,
+                xticks=[],
+            )
 
         return ax
+
+    def plot_depth_cross_section(
+        self,
+        p1: list[float, float] = None,
+        p2: list[float, float] = None,
+        width_km: float = None,
+        column: str = "mag",
+        plot_histogram: bool = True,
+        kwargs: dict = None,
+        ax: Optional[plt.axes.Axes] = None,
+    ) -> plt.axes.Axes:
+        
+        for column_name in ["lon", "lat", "depth",column]:
+            assert column_name in self.catalog.columns, f"column {column} not in catalog" # TODO: make this assertion as part of the catalog class itself?
+        
+        if ax is None:
+            fig, ax = plt.subplots()
+
+        if p1 is None and p2 is None:
+            p1 = np.array([self.longitude_range[0], self.latitude_range[0]])
+            p2 = np.array([self.longitude_range[1], self.latitude_range[1]])
+
+        default_kwargs = {
+            "alpha": 0.5,
+            "color": "C0",
+            "s": getattr(self.catalog,column),
+        }
+
+        if kwargs is None:
+            kwargs = {}
+        default_kwargs.update(kwargs)
+        kwargs = default_kwargs
+
+        p1, p2, x = [
+            get_xyz_from_lonlat(np.atleast_2d(ll)[:, 0], np.atleast_2d(ll)[:, 1])
+            for ll in [p1, p2, self.catalog[["lon", "lat"]].values]
+        ]
+
+        distance_along_section = np.squeeze(
+            np.matmul((x - p1), (p2 - p1).T) / np.linalg.norm(p2 - p1)
+        )
+        
+        depth = self.catalog.depth.values
+        
+        if width_km is not None:
+            distance_orthogonal_to_section = np.sqrt(np.linalg.norm(x - p1, axis=1)**2 - distance_along_section**2)
+            index = distance_orthogonal_to_section < width_km
+            distance_along_section = distance_along_section[index]
+            depth = depth[index]
+        
+
+        marker_size = getattr(self.catalog,column) if isinstance(column,str) else 1
+
+        sh = ax.scatter(
+            distance_along_section,
+            depth,
+            **kwargs,
+        )
+        
+        ax.set(
+            ylabel="Depth (km)",
+            xlabel="Distance along section (km)",
+            ylim=(np.max(depth),0),
+        )
+        
+        if plot_histogram is True:
+            # horizonta histogram of distance along section on the right side of the plot pointing left
+            axb = ax.twiny()
+            axb.hist(
+                depth,
+                orientation="horizontal",
+                density=True,
+                alpha=0.3,
+                color=sh.get_facecolor(),
+            )
+
+            axb.set(
+                xlim=np.array(axb.get_xlim()[::-1]) * 10,
+                xticks=[],
+            )
+
+        return ax       
+        
 
     def plot_base_map(
         self,
@@ -512,6 +594,7 @@ class EarthquakeCatalog(Catalog):
         kwargs: dict = None,
         other_catalog: Catalog = None,
         other_catalog_buffer: float = 0.0,
+        reload: bool = False,
     ) -> Catalog:
 
         if catalog is None:
@@ -533,12 +616,14 @@ class EarthquakeCatalog(Catalog):
             else:
                 raise ValueError("No other catalog provided")
 
-            _catalog = self.get_and_save_catalog(filename, **metadata)
+            _catalog = self.get_and_save_catalog(filename, reload=reload, **metadata)
             self.catalog = self._add_time_column(_catalog, "time")
         else:
             self.catalog = catalog
 
         super().__init__(self.catalog)
+        
+        self._stress_drop = 3e6  # Pa
 
     @staticmethod
     def _add_time_column(df, column):
@@ -558,6 +643,7 @@ class EarthquakeCatalog(Catalog):
         minimum_magnitude: float = 4.5,
         use_local_client: bool = False,
         default_client_name: str = "IRIS",
+        reload: bool = True,
     ) -> pd.DataFrame:
         """
         Gets earthquake catalog for the specified region and minimum event
@@ -568,6 +654,7 @@ class EarthquakeCatalog(Catalog):
         results include only that catalog's "primary origin" and
         "primary magnitude" for each event.
         """
+        
         
         if longitude_range[1] > 180:
             longitude_range[1] = 180
@@ -612,33 +699,55 @@ class EarthquakeCatalog(Catalog):
         else:
             client_name = default_client_name
         
-        
-        # Use obspy api to ge  events from the IRIS earthquake client    
-        client = Client(client_name)
-                
-        cat = client.get_events(
+    
+        querry = dict(
             starttime=starttime,
             endtime=endtime,
             minmagnitude=minimum_magnitude,
             minlatitude=latitude_range[0],
             maxlatitude=latitude_range[1],
             minlongitude=longitude_range[0],
-            maxlongitude=longitude_range[1],
+            maxlongitude=longitude_range[1],                
         )
+        
+        if not (
+            reload is False and 
+            os.path.exists(filename) and 
+            np.load(os.path.splitext(filename)[0] + "_metadata.npy", allow_pickle=True).item() == querry
+        ):
+            warnings.warn(f"Reloading {filename}")
+            
+            # Use obspy api to ge  events from the IRIS earthquake client    
+            client = Client(client_name)
+            cat = client.get_events(**querry)
+            
+            # Write the earthquakes to a file
+            f = open(filename, "w")
+            f.write("time,lat,lon,depth,mag\n")
+            for event in cat:
+                loc = event.preferred_origin()
+                lat = loc.latitude
+                lon = loc.longitude
+                dep = loc.depth
+                time = loc.time.matplotlib_date
+                mag = event.preferred_magnitude().mag
+                f.write("{},{},{},{},{}\n".format(time, lat, lon, dep, mag))
+            f.close()
+            
+            # Save querry to metadatafile
+            np.save(os.path.splitext(filename)[0] + "_metadata.npy",querry)
+        else:
+            warnings.warn(f"Using existing {filename}")
 
-        # Write the earthquakes to a file
-        f = open(filename, "w")
-        f.write("time,lat,lon,depth,mag\n")
-        for event in cat:
-            loc = event.preferred_origin()
-            lat = loc.latitude
-            lon = loc.longitude
-            dep = loc.depth
-            time = loc.time.matplotlib_date
-            mag = event.preferred_magnitude().mag
-            f.write("{}, {}, {}, {}, {}\n".format(time, lat, lon, dep, mag))
-        f.close()
-        df = pd.read_csv(filename)
+        df = pd.read_csv(filename, na_values="None")
+        
+        # remove rows with NaN values, reset index and provide a warning is any rows were removed
+        if df.isna().values.any():
+            warnings.warn(f"{sum(sum(df.isna().values))} NaN values found in catalog. Removing rows with NaN values.")
+            df = df.dropna()
+            df = df.reset_index(drop=True)
+        
+        df.depth = df.depth/1000  # convert depth from m to km
 
         return df
 
@@ -826,6 +935,8 @@ class SlowSlipCatalog(Catalog):
             self.catalog["lat"],
             Scaling.magnitude_to_size(self.catalog[columm], self._stress_drop, "m")/2, # divide by 2 to get radius
         ):
+            if np.isnan(R):
+                continue
             cp = gd.circle(lon=lon, lat=lat, radius=R)
             geoms.append(shapely.geometry.Polygon(cp))
         
@@ -1070,7 +1181,7 @@ class WilliamsSlowSlipCatalog(SlowSlipCatalog):
 
         df["lat"] = df["Lat_geom"]
         df["lon"] = df["Lon_geom"]
-        df["depth"] = df["Z_geom"]
+        df["depth"] = -df["Z_geom"] # Note minus sign
         df["mag"] = df["Mw"]
         df["year"] = df["Start_year"]
         df["month"] = df["Start_month"]
