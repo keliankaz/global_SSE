@@ -1,4 +1,4 @@
-#%%
+# %%
 
 from __future__ import annotations
 import pandas as pd
@@ -20,6 +20,7 @@ from pathlib import Path
 
 base_dir = Path(__file__).parents[1]
 
+# constants of shame
 EARTH_RADIUS_KM = 6371
 DAY_PER_YEAR = 365
 SEC_PER_DAY = 86400
@@ -57,7 +58,7 @@ def get_xyz_from_lonlat(
 
     # Calculate the distance from the center of the earth using the depth
     # and the radius of the earth (6371 km)
-    r = EARTH_RADIUS_KM + depth_km
+    r = EARTH_RADIUS_KM - depth_km
 
     # Calculate the x, y, z coordinates
     x = r * np.cos(lat_rad) * np.cos(lon_rad)
@@ -74,7 +75,6 @@ class Catalog:
         mag_completeness: Optional[float] = None,
         units: Optional[dict] = None,
     ):
-
         self.raw_catalog = (
             catalog.copy()
         )  # Save a copy of the raw catalog in case of regret
@@ -110,6 +110,13 @@ class Catalog:
 
         assert "time" in self.catalog.keys() is not None, "No time column"
         assert "mag" in self.catalog.keys() is not None, "No magnitude column"
+
+        # check whether the catalog has locations (which is preferred)
+        for key in ["lat", "lon", "depth"]:
+            if key not in self.catalog.keys():
+                warnings.warn(
+                    f"Catalog does not have {key} column, this may cause errors."
+                )
 
     @property
     def mag_completeness(
@@ -154,7 +161,6 @@ class Catalog:
         stop: int,
         step: int = None,
     ) -> Catalog:
-
         new = copy.deepcopy(self)
         new.catalog = self.catalog[start:stop:step]
         new.__update__()
@@ -369,7 +375,6 @@ class Catalog:
         kwargs: dict = None,
         ax: Optional[plt.axes.Axes] = None,
     ) -> plt.axes.Axes:
-
         for column_name in ["lon", "lat", "depth", column]:
             assert (
                 column_name in self.catalog.columns
@@ -384,8 +389,8 @@ class Catalog:
 
         default_kwargs = {
             "alpha": 0.5,
-            "color": "C0",
-            "s": getattr(self.catalog, column) if isinstance(column, str) else 1,
+            "c": "C0",
+            "s": getattr(self.catalog, column) if column in self.catalog.keys() else 1,
         }
 
         if kwargs is None:
@@ -409,8 +414,14 @@ class Catalog:
                 np.linalg.norm(x - p1, axis=1) ** 2 - distance_along_section**2
             )
             index = distance_orthogonal_to_section < width_km
+            if np.sum(index) == 0:
+                warnings.warn(
+                    "No data in the specified area, consider increasing width_km or checking if lat lon are correct"
+                )
             distance_along_section = distance_along_section[index]
             depth = depth[index]
+            if column in self.catalog.keys():
+                default_kwargs["s"] = default_kwargs["s"][index]
 
         sh = ax.scatter(
             distance_along_section,
@@ -447,7 +458,6 @@ class Catalog:
         extent: Optional[Tuple[float, float, float, float]] = None,
         ax=None,
     ) -> plt.axes.Axes:
-
         if ax is None:
             _, ax = plt.subplots(subplot_kw={"projection": cartopy.crs.PlateCarree()})
 
@@ -509,7 +519,6 @@ class Catalog:
         extent: Optional[Tuple[float, float, float, float]] = None,
         ax=None,
     ) -> plt.axes.Axes:
-
         ax = self.plot_base_map(extent=extent, ax=ax)
 
         if scatter_kwarg is None:
@@ -599,7 +608,6 @@ class EarthquakeCatalog(Catalog):
         other_catalog_buffer: float = 0.0,
         reload: bool = False,
     ) -> Catalog:
-
         if catalog is None:
             if kwargs is None:
                 kwargs = {}
@@ -763,7 +771,6 @@ class EarthquakeCatalog(Catalog):
 
 class ESTEarthquakeCatalog(EarthquakeCatalog):
     def __init__(self) -> Catalog:
-
         self.dir_name = os.path.join(
             os.path.join(base_dir, "Datasets/Seismicity_datasets/Japan")
         )
@@ -843,7 +850,6 @@ class SlowSlipCatalog(Catalog):
             "centroid", "start"
         ] = "centroid",  # assumes SSEs times are centroid-time
     ):
-
         if catalog is not None:
             self.catalog = catalog
         else:
@@ -908,7 +914,6 @@ class SlowSlipCatalog(Catalog):
         kwargs: dict = None,
         ax: Optional[plt.axes.Axes] = None,
     ) -> plt.axes.Axes:
-
         if ax is None:
             fig, ax = plt.subplots()
 
@@ -997,7 +1002,6 @@ class SlowSlipCatalog(Catalog):
         extent: Optional[Tuple[float, float, float, float]] = None,
         ax=None,
     ) -> plt.axes.Axes:
-
         ax = self.plot_base_map(extent=extent, ax=ax)
 
         if scatter_kwarg is None:
@@ -1042,7 +1046,6 @@ class Scaling:
     def magnitude_to_size(
         MW: np.ndarray, stress_drop_Pa=3e6, out_unit: Literal["km", "m"] = "km"
     ) -> np.ndarray:
-
         # M0 = mu * A * D ~ \delta \sigma * a^3                   # MISSING CONSTANTS HERE!
         # Mw = (2/3) * (log10(M0) - 9.1)
         # a ~ [(1/(\delta \sigma)) 10^((3/2 * Mw) + 9.1)]^(1/3)   # CHECK THIS! e.g. dyne cm vs Pa
@@ -1117,6 +1120,8 @@ class JapanSlowSlipCatalog(SlowSlipCatalog):
 
         # Reset indices to avoid issues with duplicate indices
         df_all = df_all.reset_index()
+
+        df_all["depth"] = df_all.dep
 
         return df_all
 
@@ -1488,7 +1493,6 @@ class NishikawaSwarmCatalog(SwarmCatalog):
 
 # %%
 if __name__ == "__main__":
-
     # A few tests to ensure that everything still runs smoothly:
     william_catalog = WilliamsSlowSlipCatalog()
     japan_catalog = JapanSlowSlipCatalog()
