@@ -28,9 +28,15 @@ class TestSlab(unittest.TestCase):
             slab.distance([-1, 1, 10], from_latlon=True, depth_unit="km") > 0
         )
 
+    def test_properties(self):
+        """Test that all slab propetries exist for"""
+        print("Testing all properties...")
+        for region in slab2.ALL_SLABS.keys():
+            for property_key, property in slab2.SLAB_PROPERTIES.items():
+                slab = Slab(region, property=property_key)
+                self.assertEqual(slab.property, property)
+
 
 # %%
 if __name__ == "__main__":
-    slab = Slab("van")
-    slab.distance([-1, 1, 10], from_latlon=True, depth_unit="km")
     unittest.main()

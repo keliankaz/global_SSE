@@ -42,13 +42,13 @@ ALL_SLABS = {
     "izu": "Izu_Bonin",
 }
 
-SLAB_PROPERTIES = [
-    "dep",  # depth
-    "dip",  # dip
-    "str",  # strike
-    "thk",  # slab thickness
-    "unc",  # uncertainty
-]
+SLAB_PROPERTIES = {
+    "dep": "depth",
+    "dip": "dip",
+    "str": "strike",
+    "thk": "slab",
+    "unc": "uncertainty",
+}
 
 SLAB_MODEL_DATE = [
     "02.23.18",
@@ -67,10 +67,11 @@ class Slab:
     ):
         assert name in ALL_SLABS.keys(), f"Slab name {name} not in {ALL_SLABS}"
         assert (
-            property in SLAB_PROPERTIES
-        ), f"Slab property {property} not in {SLAB_PROPERTIES}"
+            property in SLAB_PROPERTIES.keys()
+        ), f"Slab property {property} not in {SLAB_PROPERTIES.keys()}"
 
         self.name = name
+        self.property = SLAB_PROPERTIES[property]
         self.path = path
 
         # The slab xyz files have the following format:
@@ -102,9 +103,15 @@ class Slab:
             self._xyz["latitude"].values, self._xyz["longitude"].values
         )
 
-        # create new dataframe with utm coordinates, positive depth in meters
+        if self.property == "depth":
+            # create new dataframe with utm coordinates, positive depth in meters
+            property_values = -self._xyz["z"].values * 1000
+        else:
+            # create new dataframe with utm coordinates and querried feature
+            property_values = self._xyz["z"]
+
         self.utm_geometry = pd.DataFrame(
-            {"easting": east, "northing": north, "depth": -self._xyz["z"].values * 1000}
+            {"easting": east, "northing": north, self.property: property_values}
         )
         self.utm_zone = zone
         self.utm_letter = letter
@@ -125,6 +132,9 @@ class Slab:
 
         xyz = np.atleast_2d(xyz)
         assert xyz.shape[1] == 3, "xyz must have 3 columns"
+        assert (
+            self.property == "depth"
+        ), "cannot calculate distance with property that is not `depth`."
 
         if np.any(xyz[:, 2] < 0):
             warnings.warn("xyz contains negative depths")
