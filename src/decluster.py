@@ -1,5 +1,5 @@
 import pytorch_lightning as pl
-from src.slow_eq import Catalog
+from src.data import Catalog
 import numpy as np
 import eq
 import torch

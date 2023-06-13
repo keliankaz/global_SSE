@@ -1,6 +1,6 @@
 import unittest
-import src.slab2 as slab2
-from src.slab2 import Slab
+import src.data.slab2 as slab2
+from src.data.slab2 import Slab
 import numpy as np
 
 
