@@ -1,8 +1,5 @@
-# %%
 from __future__ import annotations
-import pandas as pd
 import numpy as np
-import copy
 from sklearn.neighbors import BallTree
 from pathlib import Path
 import utm
@@ -46,7 +43,7 @@ SLAB_PROPERTIES = {
     "dep": "depth",
     "dip": "dip",
     "str": "strike",
-    "thk": "slab",
+    "thk": "thickness",
     "unc": "uncertainty",
 }
 
@@ -62,18 +59,14 @@ class Slab:
         self,
         name: str,
         path: Path = DATA_DIR,
-        property: str = "dep",
         date: Union[list, str] = SLAB_MODEL_DATE,
     ):
         assert name in ALL_SLABS.keys(), f"Slab name {name} not in {ALL_SLABS}"
-        assert (
-            property in SLAB_PROPERTIES.keys()
-        ), f"Slab property {property} not in {SLAB_PROPERTIES.keys()}"
 
         self.name = name
-        self.property = SLAB_PROPERTIES[property]
         self.path = path
 
+        property = "dep"
         # The slab xyz files have the following format:
         # {name}_slab2_{property}_{date}.xyz
         # The date is one of SLAB_MODEL_DATE.
@@ -84,37 +77,41 @@ class Slab:
                 if self.file.exists():
                     break
 
-        assert self.file.exists(), f"Slab file {self.file} does not exist"
-
-        self.raw_xyz = pd.read_csv(
-            self.file, header=None, names=["longitude", "latitude", "z"]
+        # read the xyz (csv) file with numpy
+        self.raw_xyz = np.genfromtxt(
+            self.file,
+            delimiter=",",
+            dtype=float,
+            missing_values="NaN",
+            filling_values=np.nan,
         )
 
-        # xyz files have longitude values from 0 to 360 degrees. Convert to -180 to 180.
-        self._xyz = copy.deepcopy(self.raw_xyz)
-        self._xyz["longitude"] = self.raw_xyz["longitude"].apply(
-            lambda x: x - 360 if x > 180 else x
+        self.longitude = np.where(
+            self.raw_xyz[:, 0] > 180, self.raw_xyz[:, 0] - 360, self.raw_xyz[:, 0]
         )
 
-        # drop NaNs rows
-        self._xyz = self._xyz.dropna()
+        self.latitude = self.raw_xyz[:, 1]
 
-        east, north, zone, letter = self.force_ll2utm(
-            self._xyz["latitude"].values, self._xyz["longitude"].values
+        self.depth = -self.raw_xyz[:, 2] * 1000
+
+        self.easting, self.northing, self.utm_zone, self.utm_letter = self.force_ll2utm(
+            self.latitude, self.longitude
         )
 
-        if self.property == "depth":
-            # create new dataframe with utm coordinates, positive depth in meters
-            property_values = -self._xyz["z"].values * 1000
-        else:
-            # create new dataframe with utm coordinates and querried feature
-            property_values = self._xyz["z"]
-
-        self.utm_geometry = pd.DataFrame(
-            {"easting": east, "northing": north, self.property: property_values}
-        )
-        self.utm_zone = zone
-        self.utm_letter = letter
+        for extra_property in ["dip", "str", "thk", "unc"]:
+            if type(date) == list:
+                for idate in date:
+                    file = path / f"{name}_slab2_{extra_property}_{idate}.xyz"
+                    if file.exists():
+                        break
+            xyz = np.genfromtxt(
+                file,
+                delimiter=",",
+                dtype=float,
+                missing_values="NaN",
+                filling_values=np.nan,
+            )
+            setattr(self, SLAB_PROPERTIES[extra_property], xyz[:, 2])
 
     def densify(self, step_meter: float = 1000):
         """Densify the slab by linear interpolation between coordinates of the geometry."""
@@ -132,9 +129,6 @@ class Slab:
 
         xyz = np.atleast_2d(xyz)
         assert xyz.shape[1] == 3, "xyz must have 3 columns"
-        assert (
-            self.property == "depth"
-        ), "cannot calculate distance with property that is not `depth`."
 
         if np.any(xyz[:, 2] < 0):
             warnings.warn("xyz contains negative depths")
@@ -147,9 +141,9 @@ class Slab:
             )
             xyz = np.atleast_2d(np.column_stack([east, north, xyz[:, 2]]))
 
-        tree = BallTree(
-            self.utm_geometry[["easting", "northing", "depth"]].values,
-        )
+        utm_slab_xyz = np.array([self.easting, self.northing, self.depth]).T
+        utm_slab_xyz = utm_slab_xyz[~np.isnan(utm_slab_xyz[:, 2]), :]
+        tree = BallTree(utm_slab_xyz)
 
         query = tree.query(xyz, return_distance=True)[
             0
@@ -159,6 +153,35 @@ class Slab:
             query /= 1000.0
 
         return query
+
+    def interpolate(self, property: str, lat: np.ndarray, lon: np.ndarray):
+        """Interpolates the querried property at the given lat, lon using a nearest neighbor search.
+        Assumes that the queried location is within the slab geometry.
+
+        Args:
+            property: property specified in SLAB_PROPERTIES
+            lat: latitudes
+            lon: longitudes
+
+        Returns:
+            interpolated property
+        """
+        mask = ~np.isnan(getattr(self, property))
+        slab_xyz = np.array(
+            [v[mask] for v in [self.latitude, self.longitude, getattr(self, property)]]
+        ).T
+        tree = BallTree(np.deg2rad(slab_xyz[:, :2]), metric="haversine")
+
+        query = tree.query(
+            np.deg2rad(np.column_stack([lat, lon])),
+            return_distance=True,
+        )[
+            1
+        ].squeeze()  # [0] is the distance [1] is index
+
+        property = slab_xyz[query, 2]
+
+        return property
 
     @staticmethod
     def force_ll2utm(lat, lon, force_zone_number=False, force_zone_letter=False):
@@ -193,4 +216,26 @@ class Slab:
         return east, north, zone, letter
 
 
-# %%
+class AllSlabs(Slab):
+    def __init__(self):
+        slab_array = []
+        for name in ALL_SLABS.keys():
+            slab_array.append(Slab(name))
+
+        for property in SLAB_PROPERTIES.values():
+            setattr(
+                self,
+                property,
+                np.concatenate([getattr(slab, property) for slab in slab_array]),
+            )
+
+        self.latitude = np.concatenate([slab.latitude for slab in slab_array])
+        self.longitude = np.concatenate([slab.longitude for slab in slab_array])
+
+    def distance(self):
+        # probably would need to make coordinates earth-centered instead of utm
+        raise NotImplementedError("distance() not implemented yet")
+
+
+if __name__ == "__main__":
+    all_slabs = AllSlabs()

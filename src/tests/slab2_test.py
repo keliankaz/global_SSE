@@ -7,6 +7,9 @@ import numpy as np
 class TestSlab(unittest.TestCase):
     """A set of unit tests for the Slab class."""
 
+    def setUp(self) -> None:
+        return super().setUp()
+
     def test_all_slabs(self):
         """Test that all slab names are valid."""
         for key, values in slab2.ALL_SLABS.items():
@@ -16,7 +19,7 @@ class TestSlab(unittest.TestCase):
             self.assertTrue(slab.file.exists())
             self.assertTrue(slab.raw_xyz is not None)
             self.assertTrue(slab.raw_xyz.shape[1] == 3)
-            self.assertTrue(slab.utm_geometry.shape[1] == 3)
+            self.assertTrue(len(slab.longitude) == len(slab.latitude))
 
     def test_distance(self):
         slab = Slab("van")
@@ -27,14 +30,6 @@ class TestSlab(unittest.TestCase):
         self.assertTrue(
             slab.distance([-1, 1, 10], from_latlon=True, depth_unit="km") > 0
         )
-
-    def test_properties(self):
-        """Test that all slab propetries exist for"""
-        print("Testing all properties...")
-        for region in slab2.ALL_SLABS.keys():
-            for property_key, property in slab2.SLAB_PROPERTIES.items():
-                slab = Slab(region, property=property_key)
-                self.assertEqual(slab.property, property)
 
 
 # %%
