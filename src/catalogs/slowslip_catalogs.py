@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import os
 from pathlib import Path
-from src.data import SlowSlipCatalog
+from src.data import SlowSlipCatalog, Slab
 from src.data.utils import DAY_PER_YEAR, SEC_PER_DAY
 
 
@@ -363,5 +363,10 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
             * SEC_PER_DAY
         )
         df["lon"] = -df["lon"]
+
+        slab = Slab("cas")
+        # used the geometry of slab2.0 to derive a depth for each event
+        depth = slab.interpolate("depth", lat=df["lat"].values, lon=df["lon"].values)
+        df["depth"] = depth / 1000  # convert to km
 
         return df
