@@ -260,6 +260,7 @@ class Catalog:
         p1: list[float, float] = None,
         p2: list[float, float] = None,
         column: str = "mag",
+        k_largest_events: Optional[int] = None,
         plot_histogram: bool = True,
         kwargs: dict = None,
         ax: Optional[plt.axes.Axes] = None,
@@ -299,6 +300,14 @@ class Catalog:
             s=marker_size,
         )
 
+        if k_largest_events is not None:
+            I = np.argsort(self.catalog[column].values)[-k_largest_events:]
+            ax.scatter(
+                self.catalog.time.values[I],
+                distance_along_section[I],
+                **dict(kwargs, marker="*", s=60),
+            )
+
         if plot_histogram is True:
             # horizonta histogram of distance along section on the right side of the plot pointing left
             axb = ax.twiny()
@@ -322,6 +331,7 @@ class Catalog:
         p2: list[float, float] = None,
         width_km: float = None,
         column: str = "mag",
+        k_largest_events: Optional[int] = None,
         plot_histogram: bool = True,
         kwargs: dict = None,
         ax: Optional[plt.axes.Axes] = None,
@@ -373,12 +383,21 @@ class Catalog:
             depth = depth[index]
             if column in self.catalog.keys():
                 default_kwargs["s"] = default_kwargs["s"][index]
+            mag = self.catalog.mag[index].values
 
         sh = ax.scatter(
             distance_along_section,
             depth,
             **kwargs,
         )
+
+        if k_largest_events is not None:
+            I = np.argsort(mag)[-k_largest_events:]
+            ax.scatter(
+                distance_along_section[I],
+                depth[I],
+                **dict(kwargs, marker="*", s=60),
+            )
 
         ax.set(
             ylabel="Depth (km)",
@@ -465,8 +484,9 @@ class Catalog:
 
     def plot_map(
         self,
-        columm: str = "mag",
+        column: str = "mag",
         scatter_kwarg: dict = None,
+        k_largest_events: Optional[int] = None,
         extent: Optional[Tuple[float, float, float, float]] = None,
         ax=None,
     ) -> plt.axes.Axes:
@@ -475,7 +495,7 @@ class Catalog:
         if scatter_kwarg is None:
             scatter_kwarg = {}
         default_scatter_kawrg = {
-            "s": self.catalog[columm],
+            "s": self.catalog[column],
             "c": "lightgray",
             "marker": "o",
             "edgecolors": "brown",
@@ -488,6 +508,14 @@ class Catalog:
             self.catalog["lat"],
             **default_scatter_kawrg,
         )
+
+        if k_largest_events is not None:
+            I = np.argsort(self.catalog[column].values)[-k_largest_events:]
+            ax.scatter(
+                self.catalog["lon"].values[I],
+                self.catalog["lat"].values[I],
+                **dict(scatter_kwarg, marker="*", s=60),
+            )
 
         return ax
 
