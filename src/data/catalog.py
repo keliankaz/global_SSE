@@ -31,7 +31,7 @@ class Catalog:
         )  # Save a copy of the raw catalog in case of regret
 
         _catalog = catalog.copy()
-        self.catalog = _catalog
+        self.catalog: pd.DataFrame = _catalog
         self.__mag_completeness = mag_completeness
         self.__mag_completeness_method = None
 
@@ -103,14 +103,14 @@ class Catalog:
     def __len__(self):
         return len(self.catalog)
 
-    def __getitem__(self, index: int) -> pd.DataFrame:
+    def __getitem__(self, index: int) -> pd.Series:
         return self.catalog.iloc[index]
 
     def __getslice__(
         self,
         start: int,
         stop: int,
-        step: int = None,
+        step: Optional[int] = None,
     ) -> Catalog:
         new = copy.deepcopy(self)
         new.catalog = self.catalog[start:stop:step]
@@ -163,12 +163,12 @@ class Catalog:
     def intersection(self, other: Catalog, buffer_radius_km: float = 50.0) -> Catalog:
         """returns a new catalog with the events within `buffer_radius_km` of the events in `other`"""
         tree = BallTree(
-            np.deg2rad([self.catalog.lat.values, self.catalog.lon.values]).T,
+            np.deg2rad(self.catalog[["lat", "lon"]].values),
             metric="haversine",
         )
 
         indices = tree.query_radius(
-            np.deg2rad([other.catalog.lat.values, other.catalog.lon.values]).T,
+            np.deg2rad(other.catalog[["lat", "lon"]].values),
             r=buffer_radius_km / EARTH_RADIUS_KM,
             return_distance=False,
         )
@@ -184,9 +184,9 @@ class Catalog:
     def get_neighboring_indices(
         self,
         other: Catalog,
-        buffer_radius_km: np.typing.ArrayLike = 50.0,
+        buffer_radius_km: float = 50.0,
         return_distances: bool = False,
-    ) -> np.ndarray:
+    ):
         """gets the indices of events in `other` that are within `buffer_radius_km` from self.
 
         The ouput therefore has dimensions [len(other),k] where k is the number of neighbors for each event.
@@ -204,12 +204,12 @@ class Catalog:
         """
 
         tree = BallTree(
-            np.deg2rad(other.catalog[["lat", "lon"]]).values,
+            np.deg2rad(other.catalog[["lat", "lon"]]),
             metric="haversine",
         )
         if return_distances is True:
             I, R = tree.query_radius(
-                np.deg2rad(self.catalog[["lat", "lon"]]).values,
+                np.deg2rad(self.catalog[["lat", "lon"]]),
                 r=buffer_radius_km / EARTH_RADIUS_KM,
                 return_distance=return_distances,
             )
@@ -220,7 +220,7 @@ class Catalog:
 
         else:
             OUTPUT = tree.query_radius(
-                np.deg2rad(self.catalog[["lat", "lon"]]).values,
+                np.deg2rad(self.catalog[["lat", "lon"]]),
                 r=buffer_radius_km / EARTH_RADIUS_KM,
                 return_distance=return_distances,
             )
@@ -425,7 +425,7 @@ class Catalog:
 
     def plot_base_map(
         self,
-        extent: Optional[Tuple[float, float, float, float]] = None,
+        extent: Optional[np.ndarray] = None,
         ax=None,
     ) -> plt.axes.Axes:
         if ax is None:
@@ -485,9 +485,9 @@ class Catalog:
     def plot_map(
         self,
         column: str = "mag",
-        scatter_kwarg: dict = None,
+        scatter_kwarg: Optional[dict] = None,
         k_largest_events: Optional[int] = None,
-        extent: Optional[Tuple[float, float, float, float]] = None,
+        extent: Optional[np.ndarray] = None,
         ax=None,
     ) -> plt.axes.Axes:
         ax = self.plot_base_map(extent=extent, ax=ax)
@@ -547,7 +547,7 @@ class Catalog:
 
     def plot_summary(
         self, kwarg={"time series": None, "map": None, "hist": None}, ax=None
-    ) -> list[plt.axes.Axes, plt.axes.Axes, plt.axes.Axes]:
+    ) -> Tuple[plt.axes.Axes, plt.axes.Axes, plt.axes.Axes]:
         if ax is None:
             fig = plt.figure(figsize=(6.5, 7))
             gs = fig.add_gridspec(4, 3)
@@ -568,7 +568,6 @@ class Catalog:
 
         return (ax1, ax2, ax3)
 
-    @staticmethod
     def read_catalog(self, filename):
         """
         Reads a catalog from a file and returns a dataframe.

@@ -8,7 +8,7 @@ from obspy.clients.fdsn import Client
 import warnings
 from pathlib import Path
 from .catalog import Catalog
-from typing import Optional
+from typing import Optional, Union
 
 base_dir = Path(__file__).parents[2]
 
@@ -17,13 +17,13 @@ class EarthquakeCatalog(Catalog):
     def __init__(
         self,
         catalog: Optional[pd.DataFrame] = None,
-        filename: str = None,
+        filename: Optional[Union[str, Path]] = None,
         use_other_catalog: bool = False,
-        kwargs: dict = None,
-        other_catalog: Catalog = None,
+        kwargs: Optional[dict] = None,
+        other_catalog: Optional[Catalog] = None,
         other_catalog_buffer: float = 0.0,
         reload: bool = False,
-    ) -> Catalog:
+    ):
         if catalog is None:
             if kwargs is None:
                 kwargs = {}
@@ -62,11 +62,11 @@ class EarthquakeCatalog(Catalog):
 
     @staticmethod
     def get_and_save_catalog(
-        filename: str = "_temp_local_catalog.csv",
+        filename: Union[str, Path] = "_temp_local_catalog.csv",
         starttime: str = "2019-01-01",
         endtime: str = "2020-01-01",
-        latitude_range: list[float, float] = [-90, 90],
-        longitude_range: list[float, float] = [-180, 180],
+        latitude_range: list[float] = [-90, 90],
+        longitude_range: list[float] = [-180, 180],
         minimum_magnitude: float = 4.5,
         use_local_client: bool = False,
         default_client_name: str = "IRIS",
