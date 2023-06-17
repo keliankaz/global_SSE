@@ -16,7 +16,6 @@ class TestSlab(unittest.TestCase):
             print("Testing: ", key)
             slab = Slab(key)
             self.assertEqual(slab.name, key)
-            self.assertTrue(slab.file.exists())
             self.assertTrue(slab.raw_xyz is not None)
             self.assertTrue(slab.raw_xyz.shape[1] == 3)
             self.assertTrue(len(slab.longitude) == len(slab.latitude))

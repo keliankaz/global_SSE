@@ -5,6 +5,8 @@ from pathlib import Path
 import utm
 import warnings
 from typing import Union, Literal
+from functools import cached_property
+from pyproj import Transformer
 
 base_dir = Path(__file__).parents[2]
 DATA_DIR = base_dir / "Datasets" / "Slab2" / "Slab2_TXT"
@@ -65,53 +67,51 @@ class Slab:
 
         self.name = name
         self.path = path
+        self.date = date
 
-        property = "dep"
-        # The slab xyz files have the following format:
-        # {name}_slab2_{property}_{date}.xyz
-        # The date is one of SLAB_MODEL_DATE.
-        # Check which date in SLAB_MODEL_DATE is available:
-        if type(date) == list:
-            for idate in date:
-                self.file = path / f"{name}_slab2_{property}_{idate}.xyz"
-                if self.file.exists():
-                    break
-
-        # read the xyz (csv) file with numpy
-        self.raw_xyz = np.genfromtxt(
-            self.file,
-            delimiter=",",
-            dtype=float,
-            missing_values="NaN",
-            filling_values=np.nan,
-        )
+        self.raw_xyz = self._get_property_xyz("dep")
 
         self.longitude = np.where(
             self.raw_xyz[:, 0] > 180, self.raw_xyz[:, 0] - 360, self.raw_xyz[:, 0]
         )
-
         self.latitude = self.raw_xyz[:, 1]
-
         self.depth = -self.raw_xyz[:, 2] * 1000
 
         self.easting, self.northing, self.utm_zone, self.utm_letter = self.force_ll2utm(
             self.latitude, self.longitude
         )
 
-        for extra_property in ["dip", "str", "thk", "unc"]:
-            if type(date) == list:
-                for idate in date:
-                    file = path / f"{name}_slab2_{extra_property}_{idate}.xyz"
-                    if file.exists():
-                        break
-            xyz = np.genfromtxt(
-                file,
-                delimiter=",",
-                dtype=float,
-                missing_values="NaN",
-                filling_values=np.nan,
-            )
-            setattr(self, SLAB_PROPERTIES[extra_property], xyz[:, 2])
+    def _get_property_xyz(self, property: str):
+        if type(self.date) == list:
+            for idate in self.date:
+                file = self.path / f"{self.name}_slab2_{property}_{idate}.xyz"
+                if file.exists():
+                    break
+        xyz = np.genfromtxt(
+            file,
+            delimiter=",",
+            dtype=float,
+            missing_values="NaN",
+            filling_values=np.nan,
+        )
+
+        return xyz
+
+    @cached_property
+    def strike(self):
+        return self._get_property_xyz("str")[:, 2]
+
+    @cached_property
+    def dip(self):
+        return self._get_property_xyz("dip")[:, 2]
+
+    @cached_property
+    def thickness(self):
+        return self._get_property_xyz("thk")[:, 2]
+
+    @cached_property
+    def uncertainty(self):
+        return self._get_property_xyz("unc")[:, 2]
 
     def densify(self, step_meter: float = 1000):
         """Densify the slab by linear interpolation between coordinates of the geometry."""
@@ -121,7 +121,7 @@ class Slab:
     def distance(
         self,
         xyz,
-        from_latlon: bool = False,
+        from_latlon: bool = True,  # else from ECEF
         depth_unit: Literal["km", "m"] = "m",
         distance_unit: Literal["km", "m"] = "m",
     ):
@@ -136,14 +136,17 @@ class Slab:
             xyz[:, 2] = xyz[:, 2] * 1000
 
         if from_latlon:
-            east, north, _, _ = self.force_ll2utm(
-                xyz[:, 0], xyz[:, 1], self.utm_zone, self.utm_letter
+            ECEF_xyz = np.atleast_2d(
+                np.column_stack(
+                    self.gps_to_ecef_pyproj(xyz[:, 0], xyz[:, 1], -xyz[:, 2])
+                )
             )
-            xyz = np.atleast_2d(np.column_stack([east, north, xyz[:, 2]]))
 
-        utm_slab_xyz = np.array([self.easting, self.northing, self.depth]).T
-        utm_slab_xyz = utm_slab_xyz[~np.isnan(utm_slab_xyz[:, 2]), :]
-        tree = BallTree(utm_slab_xyz)
+        slab_ECEF_xyz = np.array(
+            self.gps_to_ecef_pyproj(self.latitude, self.longitude, -self.depth)
+        ).T
+        slab_ECEF_xyz = slab_ECEF_xyz[~np.isnan(slab_ECEF_xyz[:, 2]), :]
+        tree = BallTree(slab_ECEF_xyz)
 
         query = tree.query(xyz, return_distance=True)[
             0
@@ -154,7 +157,9 @@ class Slab:
 
         return query
 
-    def interpolate(self, property: str, lat: np.ndarray, lon: np.ndarray):
+    def interpolate(
+        self, property: str, lat: np.ndarray, lon: np.ndarray
+    ):  # TODO: use ECEF instead of lat/lon
         """Interpolates the querried property at the given lat, lon using a nearest neighbor search.
         Assumes that the queried location is within the slab geometry.
 
@@ -215,6 +220,14 @@ class Slab:
             )
         return east, north, zone, letter
 
+    @staticmethod
+    def gps_to_ecef_pyproj(lat, lon, alt):
+        transformer = Transformer.from_crs(
+            {"proj": "latlong", "ellps": "WGS84", "datum": "WGS84"},
+            {"proj": "geocent", "ellps": "WGS84", "datum": "WGS84"},
+        )
+        return transformer.transform(lon, lat, alt, radians=False)
+
 
 class AllSlabs(Slab):
     def __init__(self):
@@ -222,19 +235,33 @@ class AllSlabs(Slab):
         for name in ALL_SLABS.keys():
             slab_array.append(Slab(name))
 
-        for property in SLAB_PROPERTIES.values():
-            setattr(
-                self,
-                property,
-                np.concatenate([getattr(slab, property) for slab in slab_array]),
-            )
+        self._slab_array = slab_array
 
-        self.latitude = np.concatenate([slab.latitude for slab in slab_array])
-        self.longitude = np.concatenate([slab.longitude for slab in slab_array])
+        self.latitude = np.concatenate([slab.latitude for slab in self._slab_array])
+        self.longitude = np.concatenate([slab.longitude for slab in self._slab_array])
 
-    def distance(self):
-        # probably would need to make coordinates earth-centered instead of utm
-        raise NotImplementedError("distance() not implemented yet")
+    def collect_property(self, property: str):
+        return np.concatenate([getattr(slab, property) for slab in self._slab_array])
+
+    @cached_property
+    def depth(self):
+        return self.collect_property("depth")
+
+    @cached_property
+    def dip(self):
+        return self.collect_property("dip")
+
+    @cached_property
+    def strike(self):
+        return self.collect_property("strike")
+
+    @cached_property
+    def thickness(self):
+        return self.collect_property("thikness")
+
+    @cached_property
+    def uncertainty(self):
+        return self.collect_property("uncertainty")
 
 
 if __name__ == "__main__":
