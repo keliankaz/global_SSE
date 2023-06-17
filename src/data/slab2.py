@@ -148,7 +148,7 @@ class Slab:
         slab_ECEF_xyz = slab_ECEF_xyz[~np.isnan(slab_ECEF_xyz[:, 2]), :]
         tree = BallTree(slab_ECEF_xyz)
 
-        query = tree.query(xyz, return_distance=True)[
+        query = tree.query(ECEF_xyz, return_distance=True)[
             0
         ].squeeze()  # [0] is the distance [1] is index
 
