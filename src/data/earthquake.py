@@ -90,6 +90,14 @@ class EarthquakeCatalog(Catalog):
             longitude_range[0] = -180
             warnings.warn("Longitude range exceeds -180 degrees. Setting to -180.")
 
+        if latitude_range[1] > 90:
+            latitude_range[1] = 90
+            warnings.warn("Latitude range exceeds 90 degrees. Setting to 90.")
+
+        if latitude_range[0] < -90:
+            latitude_range[0] = -90
+            warnings.warn("Latitude range exceeds -90 degrees. Setting to -90.")
+
         def is_within(lat_range_querry, lon_range_querry, lat_range, lon_range):
             """
             Checks if a point is within a latitude and longitude range.

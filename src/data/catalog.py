@@ -104,7 +104,7 @@ class Catalog:
         return len(self.catalog)
 
     def __getitem__(self, index: int) -> pd.DataFrame:
-        return self.catalog[index]
+        return self.catalog.iloc[index]
 
     def __getslice__(
         self,
