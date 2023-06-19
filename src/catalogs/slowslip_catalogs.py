@@ -1,10 +1,11 @@
+# %%
 from __future__ import annotations
 import pandas as pd
 from datetime import datetime, timedelta
 import numpy as np
 import os
 from pathlib import Path
-from src.data import SlowSlipCatalog, Slab
+from src.data import SlowSlipCatalog, Slab, AllSlabs
 from src.data.utils import DAY_PER_YEAR, SEC_PER_DAY
 
 
@@ -366,7 +367,75 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
 
         slab = Slab("cas")
         # used the geometry of slab2.0 to derive a depth for each event
-        depth = slab.interpolate("depth", lat=df["lat"].values, lon=df["lon"].values)
+        depth = slab.interpolate(
+            "depth", lat=df["lat"].to_numpy(), lon=df["lon"].to_numpy()
+        )
+        df["depth"] = depth / 1000  # convert to km
+
+        return df
+
+
+class ChenSlowSlipCatalog(SlowSlipCatalog):
+    def __init__(self):
+        self.name = "Taiwan ( Chen et al. 2018)"
+        self.dir_name = os.path.join(
+            os.path.dirname(__file__),
+            os.path.join(base_dir, "Datasets/Slow_slip_datasets/Taiwan"),
+        )
+        self.file_name = "Chen2018.csv"
+
+        super().__init__(
+            filename=os.path.join(self.dir_name, self.file_name),
+        )
+
+    def _add_time_column(self, df, column):
+        """
+        Adds a column to a dataframe with date converted from deciyear.
+        """
+
+        for i, row in df.iterrows():
+            df.loc[i, column] = self._deciyear_to_datetime(row["mid_time_deciyear"])
+
+        return df
+
+    @staticmethod
+    def _deciyear_to_datetime(deciyear):
+        """
+        Converts decimal year to datetime.
+        """
+        year = int(deciyear)
+        rem = deciyear - year
+        base = datetime(year, 1, 1)
+        result = base + timedelta(
+            seconds=(base.replace(year=base.year + 1) - base).total_seconds() * rem
+        )
+        return result
+
+    @staticmethod
+    def read_catalog(file_name):
+        """
+        Reads in a catalog of slow slip events in Mexico and returns a pandas dataframe. Read each file
+        Datasets/Slow_slip_datasets/Mexico/ directory and concatenate them into one dataframe.
+        """
+
+        df = pd.read_csv(
+            file_name,
+            skiprows=1,
+            sep=",",
+            index_col=False,
+            names=["start", "end", "lat", "lon", "mag"],
+        )
+
+        # for the purpose of having one representative number for the duration
+        # take the average of the maximum and the minumum duration
+        df["duration"] = (df["end"] - df["start"]) * DAY_PER_YEAR * SEC_PER_DAY
+        df["mid_time_deciyear"] = (df["start"] + df["end"]) / 2
+
+        slab = Slab("ryu")
+        # used the geometry of slab2.0 to derive a depth for each event
+        depth = slab.interpolate(
+            "depth", lat=df["lat"].to_numpy(), lon=df["lon"].to_numpy()
+        )
         df["depth"] = depth / 1000  # convert to km
 
         return df

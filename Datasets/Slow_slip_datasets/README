@@ -1,5 +1,20 @@
 ## Slow slip datasets:
 
+### Taiwan:
+    Episodic slow slip events and overlying plate seismicity at the southernmost Ryukyu Trench
+
+    File name:
+    Chen2018.xlsx
+
+    Header:
+    start, end, lat,lon, mag 
+
+    Citation:
+    {
+        Chen, S. K., Wu, Y.-M., & Chan, Y.-C. (2018). Episodic slow slip events and overlying plate seismicity at the southernmost Ryukyu Trench. Geophysical Research Letters, 45, 10,369– 10,377. https://doi.org/10.1029/2018GL079740
+    }
+
+
 ### Japan:
 
 Slow Slip Events in the Kanto and Tokai Regions of Central Japan Detected Using Global Navigation Satellite System Data During 1994–2020
