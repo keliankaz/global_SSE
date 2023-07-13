@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import os
 from pathlib import Path
-from src.data import SlowSlipCatalog, Slab, AllSlabs
+from src.data import SlowSlipCatalog, Slab
 from src.data.utils import DAY_PER_YEAR, SEC_PER_DAY
 
 

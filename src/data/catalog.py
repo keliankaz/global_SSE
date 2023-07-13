@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import cartopy
+from cartopy import crs
 from typing import Optional, Literal, Tuple
 import copy
 import warnings
@@ -429,9 +430,9 @@ class Catalog:
         ax=None,
     ) -> plt.axes.Axes:
         if ax is None:
-            _, ax = plt.subplots(subplot_kw={"projection": cartopy.crs.PlateCarree()})
+            _, ax = plt.subplots(subplot_kw={"projection": crs.PlateCarree()})
 
-        usemap_proj = cartopy.crs.PlateCarree()
+        usemap_proj = crs.PlateCarree()
         # set appropriate extents: (lon_min, lon_max, lat_min, lat_max)
         if extent is None:
             buffer = 1
@@ -466,7 +467,7 @@ class Catalog:
 
         ax.set_extent(
             extent,
-            crs=cartopy.crs.PlateCarree(),
+            crs=crs.PlateCarree(),
         )
 
         ax.add_feature(cartopy.feature.LAND, color="lightgray")
@@ -499,7 +500,7 @@ class Catalog:
             "c": "lightgray",
             "marker": "o",
             "edgecolors": "brown",
-            "transform": cartopy.crs.PlateCarree(),
+            "transform": crs.PlateCarree(),
         }
         default_scatter_kawrg.update(scatter_kwarg)
 
@@ -510,7 +511,7 @@ class Catalog:
         )
 
         if k_largest_events is not None:
-            I = np.argsort(self.catalog[column].values)[-k_largest_events:]
+            I = np.argsort(self.catalog[column].to_numpy())[-k_largest_events:]
             ax.scatter(
                 self.catalog["lon"].values[I],
                 self.catalog["lat"].values[I],
@@ -547,17 +548,17 @@ class Catalog:
 
     def plot_summary(
         self, kwarg={"time series": None, "map": None, "hist": None}, ax=None
-    ) -> Tuple[plt.axes.Axes, plt.axes.Axes, plt.axes.Axes]:
+    ) -> Tuple[plt.axes.Axes, plt.axes.Axes, plt.axes.Axes, plt.axes.Axes]:
         if ax is None:
             fig = plt.figure(figsize=(6.5, 7))
             gs = fig.add_gridspec(4, 3)
-            ax1 = fig.add_subplot(gs[0:2, 0:2], projection=cartopy.crs.PlateCarree())
+            ax1 = fig.add_subplot(gs[0:2, 0:2], projection=crs.PlateCarree())
             ax2 = fig.add_subplot(gs[0:2, 2])
             ax3 = fig.add_subplot(gs[2, :])
             ax4 = fig.add_subplot(gs[3, :])
         else:
             print("Bold decision")
-            ax1, ax2, ax3 = ax
+            ax1, ax2, ax3, ax4 = ax
 
         self.plot_map(ax=ax1)
         self.plot_hist(ax=ax2)
@@ -566,7 +567,7 @@ class Catalog:
 
         plt.tight_layout()
 
-        return (ax1, ax2, ax3)
+        return (ax1, ax2, ax3, ax4)
 
     def read_catalog(self, filename):
         """

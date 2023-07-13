@@ -18,8 +18,8 @@ base_dir = Path(__file__).parents[2]
 class SlowSlipCatalog(Catalog):
     def __init__(
         self,
-        catalog: pd.DataFrame = None,
-        filename: str = None,
+        catalog: Optional[pd.DataFrame] = None,
+        filename: Optional[str] = None,
         time_columns: list[str] = ["year", "month", "day"],
         time_alignment: Literal[
             "centroid", "start"
@@ -84,8 +84,8 @@ class SlowSlipCatalog(Catalog):
 
     def plot_space_time_series(
         self,
-        p1: list[float, float] = None,
-        p2: list[float, float] = None,
+        p1: list[float] = None,
+        p2: list[float] = None,
         kwargs: dict = None,
         ax: Optional[plt.axes.Axes] = None,
     ) -> plt.axes.Axes:
@@ -173,7 +173,7 @@ class SlowSlipCatalog(Catalog):
     def plot_map(
         self,
         columm: str = "mag",
-        scatter_kwarg: dict = None,
+        scatter_kwarg: Optional[dict] = None,
         extent: Optional[Tuple[float, float, float, float]] = None,
         ax=None,
     ) -> plt.axes.Axes:

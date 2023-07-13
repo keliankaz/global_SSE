@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Literal
+from typing import Literal, Optional
 
 # constants of shame
 EARTH_RADIUS_KM = 6371
@@ -8,7 +8,7 @@ SEC_PER_DAY = 86400
 
 
 def get_xyz_from_lonlat(
-    lon: np.ndarray, lat: np.ndarray, depth_km: np.ndarray = None
+    lon: np.ndarray, lat: np.ndarray, depth_km: Optional[np.ndarray] = None
 ) -> np.ndarray:
     """Converts longitude, latitude, and depth to x, y, and z Cartesian
     coordinates.
@@ -56,9 +56,9 @@ class Scaling:
     def magnitude_to_size(
         MW: np.ndarray, stress_drop_Pa=3e6, out_unit: Literal["km", "m"] = "km"
     ) -> np.ndarray:
-        # M0 = mu * A * D ~ \delta \sigma * a^3                   # MISSING CONSTANTS HERE!
+        # M0 = mu * A * D ~ \delta \sigma * a^3                   # TODO: MISSING CONSTANTS HERE!
         # Mw = (2/3) * (log10(M0) - 9.1)
-        # a ~ [(1/(\delta \sigma)) 10^((3/2 * Mw) + 9.1)]^(1/3)   # CHECK THIS! e.g. dyne cm vs Pa
+        # a ~ [(1/(\delta \sigma)) 10^((3/2 * Mw) + 9.1)]^(1/3)   # TODO: CHECK THIS! e.g. dyne cm vs Pa
         # for SSEs \delta \sigma ~ 10 kPa
         # for Earthquake \delta \sigma ~ 3 MPa (default)
         # returns the dimensions of the earthquake in km

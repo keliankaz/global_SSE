@@ -87,6 +87,10 @@ class Slab:
                 file = self.path / f"{self.name}_slab2_{property}_{idate}.xyz"
                 if file.exists():
                     break
+        else:
+            file = self.path / f"{self.name}_slab2_{property}_{self.date}.xyz"
+            assert file.exists()
+
         xyz = np.genfromtxt(
             file,
             delimiter=",",
@@ -141,6 +145,8 @@ class Slab:
                     self.gps_to_ecef_pyproj(xyz[:, 0], xyz[:, 1], -xyz[:, 2])
                 )
             )
+        else:
+            ECEF_xyz = xyz
 
         slab_ECEF_xyz = np.array(
             self.gps_to_ecef_pyproj(self.latitude, self.longitude, -self.depth)
@@ -184,12 +190,14 @@ class Slab:
             1
         ].squeeze()  # [0] is the distance [1] is index
 
-        property = slab_xyz[query, 2]
+        property_values = slab_xyz[query, 2]
 
-        return property
+        return property_values
 
     @staticmethod
-    def force_ll2utm(lat, lon, force_zone_number=False, force_zone_letter=False):
+    def force_ll2utm(
+        lat, lon, force_zone_number=False, force_zone_letter=False
+    ) -> tuple:
         # Hack to force utm to use the same zone for all points
         # (note I posted a stackoverflow question about this)
         if not force_zone_letter or not force_zone_letter:
