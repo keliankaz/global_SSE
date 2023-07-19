@@ -442,7 +442,7 @@ class WilliamsSlowSlipCatalog(SlowSlipCatalog):
 
         df["time"] = df["Start_time"] + (df["End_time"] - df["Start_time"]) / 2
 
-        df["duration"] = (df["End_time"] - df["Start_time"]).dt.days
+        df["duration"] = (df["End_time"] - df["Start_time"]).dt.seconds
 
         return df
 

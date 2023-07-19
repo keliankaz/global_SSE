@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import cartopy
 from cartopy import crs
-from typing import Optional, Literal, Tuple
+import shapely
+from typing import Optional, Literal, Union
 import copy
 import warnings
 from pathlib import Path
@@ -160,6 +161,22 @@ class Catalog:
 
     def get_space_slice(self, latitude_range, longitude_range):
         return self.slice_by("lat", *latitude_range).slice_by("lon", *longitude_range)
+
+    def get_polygon_slice(
+        self,
+        polygonal_boundary: np.ndarray,
+    ) -> Catalog:
+        polygon = shapely.geometry.Polygon(polygonal_boundary)
+
+        new = copy.deepcopy(self)
+        new.catalog = new.catalog[
+            new.catalog.apply(
+                lambda row: polygon.contains(shapely.geometry.Point(row.lon, row.lat)),
+                axis=1,
+            )
+        ]
+
+        return new
 
     def intersection(self, other: Catalog, buffer_radius_km: float = 50.0) -> Catalog:
         """returns a new catalog with the events within `buffer_radius_km` of the events in `other`"""
@@ -574,3 +591,6 @@ class Catalog:
         Reads a catalog from a file and returns a dataframe.
         """
         raise NotImplementedError
+
+
+# %%
