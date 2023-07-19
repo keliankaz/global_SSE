@@ -17,6 +17,20 @@
 
 ### Japan:
 
+Geodetic matched filter slow slip event detection along the northern Japan subduction zones
+
+    File name: 
+    lou2023.csv
+
+    Header:
+    ID,Time,Longitude,Latitude,Duration,Mw
+
+    Citation: Marill, L., Marsan, D., Rousset, B., Socquet, A. (2023). Geodetic matched filter slow slip event detection along the northern Japan subduction zones. Journal of Geophysical Research: Solid Earth
+    
+#### Slow earthquake database:
+
+Slow slip events for Japan are primarily from available though the slow earthquake database (http://www-solid.eps.s.u-tokyo.ac.jp/~sloweq/). Within `./SlowEqDatabase`, the data are available in the following formats:
+
 Slow Slip Events in the Kanto and Tokai Regions of Central Japan Detected Using Global Navigation Satellite System Data During 1994–2020
 
     File name:
