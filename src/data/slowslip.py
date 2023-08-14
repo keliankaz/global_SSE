@@ -87,6 +87,7 @@ class SlowSlipCatalog(Catalog):
         p1: list[float] = None,
         p2: list[float] = None,
         kwargs: dict = None,
+        plot_histogram: bool = False,
         ax: Optional[plt.axes.Axes] = None,
     ) -> plt.axes.Axes:
         if ax is None:
@@ -154,19 +155,20 @@ class SlowSlipCatalog(Catalog):
             xlabel="Time",
             ylabel="Distance along cross-section",
         )
+        if plot_histogram:
+            axb = ax.twiny()
+            axb.hist(
+                distance_along_section,
+                orientation="horizontal",
+                density=True,
+                bins=20,
+                **kwargs,
+            )
 
-        axb = ax.twiny()
-        axb.hist(
-            distance_along_section,
-            orientation="horizontal",
-            density=True,
-            **kwargs,
-        )
-
-        axb.set(
-            xlim=np.array(axb.get_xlim()[::-1]) * 10,
-            xticks=[],
-        )
+            axb.set(
+                xlim=np.array(axb.get_xlim()[::-1]) * 10,
+                xticks=[],
+            )
 
         return ax
 
