@@ -178,8 +178,73 @@ class Catalog:
 
         return new
 
-    def intersection(self, other: Catalog, buffer_radius_km: float = 50.0) -> Catalog:
-        """returns a new catalog with the events within `buffer_radius_km` of the events in `other`"""
+    def filter_duplicates(
+        self,
+        buffer_radius_km: float = 100,
+        buffer_time_days: float = 30,
+        stategy: Literal[
+            "keep first", "keep last", "keep largest", "referece"
+        ] = "keep first",
+        ref_preference=None,
+    ) -> Catalog:
+        """returns a new catalog with duplicate events removed
+
+        Checks for duplicates within `buffer_radius_km` and `buffer_time_seconds` of each other.
+
+        """
+
+        self.catalog.reset_index(drop=True, inplace=True)
+        indices = self.intersection(
+            self,
+            buffer_radius_km=buffer_radius_km,
+            buffer_time_days=buffer_time_days,
+            return_indices=True,
+        )[1]
+
+        if ref_preference is not None:
+            ranking = {i_ref: i for i, i_ref in enumerate(ref_preference)}
+
+        indices_to_drop = []
+        for i, neighbors in enumerate(indices):
+            # Expects that all events in the catalog will have at least themselves as a neighbor
+            if (
+                len(neighbors) > 1
+                and len(self.catalog.iloc[neighbors].ref.unique()) > 1
+            ):  # don't drop if all events are the same reference
+                if stategy == "keep first":
+                    keep = self.catalog.iloc[neighbors].time.argmin()
+
+                if stategy == "keep last":
+                    keep = self.catalog.iloc[neighbors].time.argmax()
+
+                if stategy == "keep largest":
+                    keep = self.catalog.iloc[neighbors].mag.argmax()
+
+                if stategy == "reference":
+                    if ref_preference is None:
+                        raise ValueError("Must specify reference event")
+                    references = self.catalog.ref.iloc[neighbors]
+                    rank = np.array([ranking[ref] for ref in references])
+                    keep = rank.argmin()
+                indices_to_drop.append(np.delete(neighbors, keep))
+
+        new = copy.deepcopy(self)
+        if len(indices_to_drop) > 0:
+            indices_to_drop = np.unique(np.concatenate(indices_to_drop))
+            new.catalog = new.catalog.drop(indices_to_drop)
+
+        return new
+
+    def intersection(
+        self,
+        other: Catalog,
+        buffer_radius_km: float = 50.0,
+        buffer_time_days=None,
+        return_indices=False,
+    ) -> Catalog:
+        """returns a new catalog with the events within `buffer_radius_km`  and `buffer_time_days` of each other"""
+
+        # For each event we get the indices of events in other that are within `buffer_radius_km` of it
         tree = BallTree(
             np.deg2rad(self.catalog[["lat", "lon"]].values),
             metric="haversine",
@@ -191,13 +256,25 @@ class Catalog:
             return_distance=False,
         )
 
-        indices = np.unique(np.concatenate(indices))
+        # For each event we get the indices of the events in other that are within `buffer_time_second` of it
+        if buffer_time_days is not None:
+            for i, t in enumerate(other.catalog.time.values):
+                indices[i] = indices[i][
+                    np.abs(self.catalog.time.values[indices[i]] - t)
+                    / np.timedelta64(1, "D")
+                    < buffer_time_days
+                ]
+
+        unique_indices = np.unique(np.concatenate(indices))
 
         new = copy.deepcopy(self)
-        new.catalog = self.catalog.iloc[indices]
+        new.catalog = self.catalog.iloc[unique_indices]
         new.__update__()
 
-        return new
+        if return_indices:
+            return new, indices
+        else:
+            return new
 
     def get_neighboring_indices(
         self,
