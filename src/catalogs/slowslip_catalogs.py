@@ -15,6 +15,7 @@ base_dir = Path(__file__).parents[2]
 class JapanSlowslipDatabase(SlowSlipCatalog):
     def __init__(self, files=None):
         self.name = "Japan"
+        self.region = "Japan"
         self.dir_name = os.path.join(
             base_dir, "Datasets/Slow_slip_datasets/Japan/SlowEqDatabase"
         )
@@ -107,6 +108,7 @@ class JapanSlowslipDatabase(SlowSlipCatalog):
 class RoussetSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.name = "Mexico (Rousset et al. 2017)"
+        self.region = "Mexico"
         self.ref = "Rousset et al. 2017"
         self.dir_name = os.path.join(base_dir, "Datasets/Slow_slip_datasets/Mexico/")
         self.file_name = "Rousset2017.txt"
@@ -169,6 +171,7 @@ class RoussetSlowSlipCatalog(SlowSlipCatalog):
 class LouSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.name = "Japan trench (Lou et al. in prep.)"
+        self.name = "Japan trench"
         self.ref = "Lou et al. in prep."
         self.dir_name = os.path.join(base_dir, "Datasets/Slow_slip_datasets/Japan/")
         self.file_name = "Lou2023.csv"
@@ -225,7 +228,7 @@ class LouSlowSlipCatalog(SlowSlipCatalog):
         )
         df.duration = df.duration * 24 * 3600  # convert from days to seconds
 
-        slab = Slab("izu")
+        slab = Slab("kur")
         # used the geometry of slab2.0 to derive a depth for each event
         depth = slab.interpolate(
             "depth", lat=df["lat"].to_numpy(), lon=df["lon"].to_numpy()
@@ -238,6 +241,7 @@ class LouSlowSlipCatalog(SlowSlipCatalog):
 class JapanSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.name = "Japan"
+        self.region = "Japan"
         self.dir_name = os.path.join(base_dir, "Datasets/Slow_slip_datasets/Japan/")
 
         # Digitized with QGIS
@@ -311,15 +315,19 @@ class JapanSlowSlipCatalog(SlowSlipCatalog):
 
         new = self.get_polygon_slice(self.japan_trench_bounding_polygon)
         new.name = "Japan Trench"
+        new.region = "Japan Trench"
 
         return new
 
-    def get_nankai_trough(self) -> SlowSlipCatalog:
+    def get_nankai_trough(self, ref=None) -> SlowSlipCatalog:
         """
         Returns a catalog of slow slip events in the Nankai trough.
         """
         new = self.get_polygon_slice(self.nankai_trough_bounding_polygon)
-        new.name = "Nankai Trough"
+        if ref is not None:
+            new.catalog = new.catalog.loc[new.catalog["ref"] == ref]
+        new.name = "Nankai Trough, " + ref if ref else "Nankai Trough"
+        new.region = "Nankai Trough"
 
         return new
 
@@ -330,6 +338,7 @@ class JapanSlowSlipCatalog(SlowSlipCatalog):
 
         new = self.get_polygon_slice(self.ryukyu_trench_bounding_polygon)
         new.name = "Ryukyu Trench"
+        new.region = "Ryukyu Trench"
 
         return new
 
@@ -337,7 +346,8 @@ class JapanSlowSlipCatalog(SlowSlipCatalog):
 class XieSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.name = "Costa Rica (Xie et al. 2020)"
-        self.ref = "Xie et al. 2020"
+        self.region = "Costa Rica"
+        self.ref = "Xie et al. (2020)"
         self.dir_name = os.path.join(
             os.path.dirname(__file__),
             os.path.join(base_dir, "Datasets/Slow_slip_datasets/Costa_Rica/"),
@@ -397,6 +407,7 @@ class XieSlowSlipCatalog(SlowSlipCatalog):
 class WilliamsSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.name = "New Zealand (Williams et al., in prep.)"
+        self.region = "New Zealand"
         self.ref = "Williams et al., in prep."
         self.dir_name = os.path.join(
             os.path.dirname(__file__),
@@ -450,6 +461,7 @@ class WilliamsSlowSlipCatalog(SlowSlipCatalog):
 class IkariSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.name = "New Zealand (Ikari et al. 2020)"
+        self.name = "New Zealand"
         self.ref = "Ikari et al. 2020"
         self.dir_name = os.path.join(
             os.path.dirname(__file__),
@@ -506,6 +518,7 @@ class IkariSlowSlipCatalog(SlowSlipCatalog):
 class MichelSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.name = "Cascadia (Michel et al. 2018)"
+        self.name = "Cascadia"
         self.ref = "Michel et al. 2018"
         self.dir_name = os.path.join(
             os.path.dirname(__file__),
@@ -592,7 +605,8 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
 class ChenSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.name = "Taiwan (Chen et al. 2018)"
-        self.ref = "Chen et al. 2018"
+        self.name = "Taiwan"
+        self.ref = "Chen et al. (2018)"
         self.dir_name = os.path.join(
             os.path.dirname(__file__),
             os.path.join(base_dir, "Datasets/Slow_slip_datasets/Taiwan"),
