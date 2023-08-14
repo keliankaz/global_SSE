@@ -44,14 +44,17 @@ Slow Slip Events in the Kanto and Tokai Regions of Central Japan Detected Using 
 
 Episodic slow slip events in the Japan subduction zone before the 2011 Tohoku-Oki earthquake
     
-        File name:
-        Ito2013.xlsx
-    
-        Header:
-        month	day	hour	min	sec	lat	lon	dep	mag	strike	dip	rake	length	width	slip	duration	catalog	ref	udate
-    
-        Citation:
-        Ito, Y., Hino, R., Kido, M., Fujimoto, H., Osada, Y., Inazu, D., ... & Ashi, J. (2013). Episodic slow slip events in the Japan subduction zone before the 2011 Tohoku-Oki earthquake. Tectonophysics, 600, 14-26.
+    File name:
+    Ito2013.xlsx
+
+    Header:
+    month	day	hour	min	sec	lat	lon	dep	mag	strike	dip	rake	length	width	slip	duration	catalog	ref	udate
+
+    Citation:
+    Ito, Y., Hino, R., Kido, M., Fujimoto, H., Osada, Y., Inazu, D., ... & Ashi, J. (2013). Episodic slow slip events in the Japan subduction zone before the 2011 Tohoku-Oki earthquake. Tectonophysics, 600, 14-26.
+
+    Coverage:
+        Central Japan, covered period: from 2008 to 2011.
 
 AIST SSE catalog 
 
@@ -91,7 +94,7 @@ l1 trend filtering-based detection of short-term slow slip events: Application t
         Yano, K., & Kano, M. (2022). l1 trend filtering-based detection of short-term slow slip events: Application to a GNSS array in Southwest Japan. Journal of Geophysical Research: Solid Earth, 127, e2021JB023258. https://doi.org/10.1029/2021JB023258
     
     Coverage:
-        Southern Japan, overed period: from April 1, 2004 to June 11, 2006.
+        Southern Japan, covered period: from April 1, 2004 to June 11, 2006.
 
 
 
