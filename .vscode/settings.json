@@ -8,11 +8,12 @@
         "-s",
         "./src",
         "-p",
-        "*_test.py"
+        "*test.py"
     ],
-    "python.testing.pytestEnabled": true,
-    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": true,
     "python.testing.pytestArgs": [
         "."
-    ]
+    ],
+    "python.analysis.typeCheckingMode": "off"
 }
