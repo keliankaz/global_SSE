@@ -322,7 +322,9 @@ class Catalog:
 
         return OUTPUT
 
-    def plot_time_series(self, column: str = "mag", ax=None) -> plt.axes.Axes:
+    def plot_time_series(
+        self, column: str = "mag", type="scatter", ax=None
+    ) -> plt.axes.Axes:
         """
         Plots a time series of a given column in a dataframe.
         """
@@ -334,14 +336,19 @@ class Catalog:
         else:
             bottom = 0
 
-        markers, stems, _ = ax.stem(
-            self.catalog["time"],
-            self.catalog[column],
-            markerfmt=".",
-            bottom=bottom,
-        )
-        plt.setp(stems, linewidth=0.5, alpha=0.5)
-        plt.setp(markers, markersize=0.5, alpha=0.5)
+        if type == "scatter":
+            markers, stems, _ = ax.stem(
+                self.catalog["time"],
+                self.catalog[column],
+                markerfmt=".",
+                bottom=bottom,
+            )
+            plt.setp(stems, linewidth=0.5, alpha=0.5)
+            plt.setp(markers, markersize=0.5, alpha=0.5)
+
+        elif type == "hist":
+            ax.hist(self.catalog["time"], bins=500)
+            ax.set_yscale("log")
 
         ax.set_xlabel("Time")
         ax.set_ylabel(column)
@@ -434,7 +441,7 @@ class Catalog:
         for column_name in ["lon", "lat", "depth", column]:
             assert (
                 column_name in self.catalog.columns
-            ), f"column {column} not in catalog"  # TODO: make this assertion as part of the catalog class itself?
+            ), f"column {column_name} not in catalog"  # TODO: make this assertion as part of the catalog class itself?
 
         if ax is None:
             fig, ax = plt.subplots()
