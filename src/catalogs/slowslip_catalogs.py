@@ -168,6 +168,67 @@ class RoussetSlowSlipCatalog(SlowSlipCatalog):
         return df
 
 
+class ElYousfiSlowSlipCatalog(SlowSlipCatalog):
+    def __init__(self):
+        self.name = "El Yousfi  et al., 2022"
+        self.region = "Mexico"
+        self.ref = "El Yousfi  et al., 2022"
+        self.dir_name = os.path.join(base_dir, "Datasets/Slow_slip_datasets/Mexico/")
+        self.file_name = "ElYousfi2022.txt"
+        _catalog = self.read_catalog(self.dir_name, self.file_name)
+
+        self.catalog = _catalog
+
+        super().__init__(self.catalog)
+
+    @staticmethod
+    def read_catalog(dir_name, file_name):
+        """
+        Reads in a catalog of slow slip events in Mexico and returns a pandas dataframe. Read each file in
+        Datasets/Slow_slip_datasets/Mexico/ directory and concatenate them into one dataframe.
+        """
+        full_dir_name = os.path.join(os.path.dirname(__file__), dir_name)
+        df = pd.read_csv(
+            os.path.join(full_dir_name, file_name),
+            sep=",",
+            names=[
+                "type",
+                "year",
+                "month",
+                "day",
+                "lat",
+                "lon",
+                "depth",
+                "mag",
+                "duration",
+                "ref",
+            ],
+        )
+
+        df.duration = df.duration * 24 * 3600  # convert from days to seconds
+
+        # add date based on year, month, day
+        df["time"] = pd.to_datetime(
+            df[["year", "month", "day"]].apply(
+                lambda x: "-".join(x.astype(str)), axis=1
+            )
+        )
+
+        return df
+
+
+class MexicoSlowSlipCatalog(SlowSlipCatalog):
+    def __init__(self):
+        self.name = "Mexico"
+        self.region = "Mexico"
+        self.dir_name = os.path.join(base_dir, "Datasets/Slow_slip_datasets/Mexico/")
+
+        _combined = RoussetSlowSlipCatalog() + ElYousfiSlowSlipCatalog()
+        self.catalog = _combined.catalog
+
+        super().__init__(self.catalog)
+
+
 class LouSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.name = "Japan trench (Lou et al. in prep.)"
@@ -246,26 +307,63 @@ class JapanSlowSlipCatalog(SlowSlipCatalog):
 
         # Digitized with QGIS
         self.japan_trench_bounding_polygon = [
-            (149.08366037274828386, 46.70988278437626207),
-            (150.61391815425150753, 44.3838909564913493),
-            (149.98141160456350462, 44.03703252601728479),
-            (148.38994351180014064, 43.09847442002863716),
-            (147.00250978990388262, 42.56798505577418013),
-            (145.34983138588040674, 41.99668881734631043),
-            (143.90118735272400841, 40.38481728749624011),
-            (143.90118735272400841, 39.22182137355378018),
-            (143.41150486264297115, 38.48729763843223139),
-            (143.22787392886257862, 36.87542610858216108),
-            (140.26937555128967006, 32.97836962502059777),
-            (139.55525525325484182, 33.77410367140227976),
-            (139.14718651152062989, 34.67185490321750763),
-            (138.5758902730927673, 35.24315114164538443),
-            (138.51467996183262699, 36.50816424102138313),
-            (140.02453430624916564, 39.26262824772719995),
-            (141.08551303475806549, 41.97628538025959699),
-            (143.22787392886257862, 44.01662908893057136),
-            (144.61530765075883664, 45.54688687043380213),
-            (149.08366037274828386, 46.7098827843762620),
+            (141.550130021335, 34.5913079754225),
+            (140.910125678055, 34.6419527168039),
+            (139.925503611469, 34.8745200714673),
+            (139.39626925068, 35.0459961217758),
+            (139.236268164859, 35.628324070063),
+            (139.211652613195, 35.9976109583285),
+            (139.150113734033, 36.1766421822648),
+            (139.150113734033, 36.3056887246082),
+            (139.199344837363, 36.4741201642055),
+            (139.457808129841, 36.6224328475793),
+            (139.531654784835, 36.7606010703024),
+            (139.691655870655, 37.2128311820651),
+            (139.691655870655, 37.3401475213849),
+            (139.777810301481, 37.8180933989398),
+            (139.851656956475, 38.0607596268774),
+            (139.950119163134, 38.3412474975774),
+            (140.147043576451, 38.774344604867),
+            (140.257813558942, 38.9659936975189),
+            (140.40550686893, 39.3762873371753),
+            (140.442430196427, 39.4998579800184),
+            (140.528584627253, 39.7558037697164),
+            (140.639354609744, 40.0579197672273),
+            (140.676277937241, 40.283631758802),
+            (140.713201264738, 40.5834124917836),
+            (140.627046833911, 40.798053825331),
+            (140.528584627253, 41.0120033732259),
+            (140.294736886439, 41.5668711362225),
+            (140.147043576451, 41.979921993966),
+            (140.048581369792, 42.2993435875736),
+            (139.974734714799, 42.6624226814425),
+            (140.023965818128, 42.8251206626614),
+            (140.220890231445, 43.0323910131286),
+            (141.449496099166, 44.1178935067269),
+            (143.836814909796, 44.8215580019539),
+            (144.355797259933, 44.9686167943544),
+            (145.757049605303, 45.0053227312198),
+            (147.573487830782, 44.5263122385939),
+            (148.48964360506, 42.884005135429),
+            (146.894447594349, 41.8553071798156),
+            (145.93462626587, 41.46140746568),
+            (145.43443768624, 41.2381454055641),
+            (145.218139922076, 41.0752923041463),
+            (145.001842157912, 40.8200247699799),
+            (144.89369327583, 40.6766441109159),
+            (144.569246629583, 40.1000336013456),
+            (144.37998608594, 39.7994937636949),
+            (144.150169711515, 38.6264267061171),
+            (144.150169711515, 38.4466619897739),
+            (143.86627889605, 37.5839827845772),
+            (143.839241675529, 37.4338503255281),
+            (143.420164757461, 36.7003513868742),
+            (143.352571706159, 36.646138071497),
+            (143.122755331735, 36.4071461132897),
+            (142.690159803406, 35.8502863888669),
+            (142.514417870023, 35.6747725301775),
+            (142.460343428982, 35.2342972642307),
+            (141.550130021335, 34.5913079754225),
         ]
         self.nankai_trough_bounding_polygon = [
             (138.59248657995570397, 35.27462259320842719),
@@ -460,8 +558,8 @@ class WilliamsSlowSlipCatalog(SlowSlipCatalog):
 
 class IkariSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
-        self.name = "New Zealand (Ikari et al. 2020)"
         self.name = "New Zealand"
+        self.region = "New Zealand"
         self.ref = "Ikari et al. 2020"
         self.dir_name = os.path.join(
             os.path.dirname(__file__),
@@ -517,8 +615,8 @@ class IkariSlowSlipCatalog(SlowSlipCatalog):
 
 class MichelSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
-        self.name = "Cascadia (Michel et al. 2018)"
         self.name = "Cascadia"
+        self.region = "Cascadia"
         self.ref = "Michel et al. 2018"
         self.dir_name = os.path.join(
             os.path.dirname(__file__),
