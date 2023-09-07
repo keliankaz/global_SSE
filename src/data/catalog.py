@@ -3,6 +3,7 @@
 from __future__ import annotations
 import pandas as pd
 from sklearn.neighbors import BallTree
+from sklearn.cluster import KMeans
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -322,6 +323,34 @@ class Catalog:
 
         return OUTPUT
 
+    def get_clusters(
+        self,
+        column: Union[list, str],
+        number_of_clusters: int,
+    ) -> list[Catalog]:
+        if type(column) is str:
+            assert column in self.catalog.columns
+            X = np.atleast_2d(self.catalog[column].values).T
+        elif type(column) is list:
+            for col in column:
+                assert col in self.catalog.columns
+            X = self.catalog[column].values
+        kmeans = KMeans(
+            n_clusters=number_of_clusters,
+        ).fit(X)
+
+        subcatalogs = []
+        for i in range(number_of_clusters):
+            new = copy.deepcopy(self)
+            new.catalog = self.catalog.loc[kmeans.labels_ == i]
+            new.__update__()
+            subcatalogs.append(new)
+
+        idx = np.argsort(kmeans.cluster_centers_.sum(axis=1))
+        subcatalogs = [subcatalogs[i] for i in idx]
+
+        return subcatalogs
+
     def plot_time_series(
         self, column: str = "mag", type="scatter", ax=None
     ) -> plt.axes.Axes:
@@ -359,8 +388,8 @@ class Catalog:
 
     def plot_space_time_series(
         self,
-        p1: list[float, float] = None,
-        p2: list[float, float] = None,
+        p1: list[float, float] = None,  # lon, lat
+        p2: list[float, float] = None,  # lon, lat
         column: str = "mag",
         k_largest_events: Optional[int] = None,
         plot_histogram: bool = True,
