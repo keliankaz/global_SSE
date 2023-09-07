@@ -41,6 +41,7 @@ class SlowSlipCatalog(Catalog):
 
         self.time_alignment = time_alignment
         self._stress_drop = 1e4  # Pa
+        self._short_term_event_cutoff = 60  # days
 
     def _add_time_column(self, df, column):
         """
@@ -206,6 +207,30 @@ class SlowSlipCatalog(Catalog):
         ax.add_geometries(geoms, **default_scatter_kawrg)
 
         return ax
+
+    def get_deep_cluster(self):
+        """
+        returns a new slow slip catalog with the events that fall in the deeper of two clusters using kmeans
+
+        note that this is not a good method for all cases
+        """
+        return self.get_clusters("depth", 2)[2]
+
+    def get_shallow_cluster(self):
+        """
+        returns a new slow slip catalog with the events that fall in the shallower of two clusters using kmeans
+
+        note that this is not a good method for all cases
+        """
+        return self.get_clusters("depth", 2)[2]
+
+    def get_short_term_events(self):
+        return self.slice_by(
+            "duration", 1, self._short_term_event_cutoff * 60 * 60 * 24
+        )  # exclude events without a specified duration
+
+    def get_long_term_events(self):
+        return self.slice_by("duration", self._short_term_event_cutoff, np.inf)
 
     @staticmethod
     def read_catalog(filename):
