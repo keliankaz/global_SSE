@@ -41,7 +41,7 @@ class SlowSlipCatalog(Catalog):
 
         self.time_alignment = time_alignment
         self._stress_drop = 1e4  # Pa
-        self._short_term_event_cutoff = 60  # days
+        self._short_term_event_cutoff = 90  # days
 
     def _add_time_column(self, df, column):
         """
@@ -226,7 +226,9 @@ class SlowSlipCatalog(Catalog):
 
     def get_short_term_events(self):
         return self.slice_by(
-            "duration", 1, self._short_term_event_cutoff * 60 * 60 * 24
+            "duration",
+            1,
+            self._short_term_event_cutoff * 60 * 60 * 24,  # note duration is in seconds
         )  # exclude events without a specified duration
 
     def get_long_term_events(self):

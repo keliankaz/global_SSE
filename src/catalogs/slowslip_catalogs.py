@@ -767,3 +767,50 @@ class ChenSlowSlipCatalog(SlowSlipCatalog):
         df["depth"] = depth / 1000  # convert to km
 
         return df
+
+
+class OkadaAlaskaSlowSlipCatalog(SlowSlipCatalog):
+    def __init__(self):
+        self.name = "Alaska (Okada et al., 2023)"
+        self.region = "Alaska"
+        self.ref = "Okada et al. (2023)"
+        self.dir_name = os.path.join(
+            os.path.dirname(__file__),
+            os.path.join(base_dir, "Datasets/Slow_slip_datasets/Alaska/"),
+        )
+        self.file_name = "okada2023.txt"
+
+        raw_catalog = self.read_catalog(os.path.join(self.dir_name, self.file_name))
+        super().__init__(raw_catalog)
+
+        self.catalog["ref"] = self.ref
+
+    @staticmethod
+    def read_catalog(file_name):
+        """
+        Reads in a catalog of slow slip events in Mexico and returns a pandas dataframe. Read each file in
+        Datasets/Slow_slip_datasets/Mexico/ directory and concatenate them into one dataframe.
+        """
+
+        df = pd.read_csv(
+            file_name,
+            index_col=False,
+            delim_whitespace=True,
+        )
+
+        df["depth"] = df["dep"]
+        df["mag"] = df["Mw"]
+
+        # We consider the event centroid to be the mid-point between the start and end times
+        df["time"] = pd.to_datetime(
+            df[["year", "month", "day"]].apply(
+                lambda x: "-".join(x.astype(str)), axis=1
+            )
+        )
+
+        df["duration"] = df["dur"] * 24 * 60 * 60
+
+        return df
+
+
+# %%
