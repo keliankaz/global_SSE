@@ -12,6 +12,18 @@ from src.data.utils import DAY_PER_YEAR, SEC_PER_DAY
 base_dir = Path(__file__).parents[2]
 
 
+def _deciyear_to_datetime(deciyear):
+    """
+    Converts decimal year to datetime.
+    """
+    year = int(deciyear)
+    rem = deciyear - year
+    base = datetime(year, 1, 1)
+    result = base + timedelta(
+        seconds=(base.replace(year=base.year + 1) - base).total_seconds() * rem
+    )
+    return result
+
 class JapanSlowslipDatabase(SlowSlipCatalog):
     def __init__(self, files=None):
         self.name = "Japan"
@@ -502,6 +514,87 @@ class XieSlowSlipCatalog(SlowSlipCatalog):
         return df
 
 
+class PerrySlowSlipCatalog(SlowSlipCatalog):
+    def __init__(self):
+        self.name = "Costa Rica (Perry et al. 2023)"
+        self.region = "Costa Rica"
+        self.ref = "Perry et al. (2023)"
+        self.dir_name = os.path.join(
+            os.path.dirname(__file__),
+            os.path.join(base_dir, "Datasets/Slow_slip_datasets/Costa_Rica/"),
+        )
+        self.file_name = "Perry2023.csv"
+
+        super().__init__(
+            filename=os.path.join(self.dir_name, self.file_name),
+        )
+        
+        self.catalog["ref"] = self.ref
+    
+    def _add_time_column(self, df, column):
+        return df
+    
+    @staticmethod
+    def read_catalog(file_name):
+        """
+        Reads in a catalog of slow slip events in Mexico and returns a pandas dataframe. Read each file in
+        Datasets/Slow_slip_datasets/Mexico/ directory and concatenate them into one dataframe.
+        """
+
+        columns = {
+            "start_yr":"year",
+            "start_doy":"day",
+            "start_dec_year":"decimal_year",
+            "end_yr":"year",
+            "end_doy":"day",
+            "end_dec_year":"decimal_year",
+            "Mw_Est":"Mw_equivalent",
+            "cent_long":"degrees",
+            "cent_lat":"degrees"
+        }
+
+        df = pd.read_csv(
+            file_name,
+            skiprows=1,
+            index_col=False,
+            delimiter=",",
+            names=columns.keys(),
+        )
+
+        df = df.reset_index(drop=True)
+        
+        # standard column notation for SSEs is time, lat, lon, mag
+        df['lat'] = df['cent_lat']
+        df['lon'] = df['cent_long']
+        df['mag'] = df['Mw_Est']
+        
+        for i, row in df.iterrows():
+            df.loc[i,"time"] = (
+                _deciyear_to_datetime((row.start_dec_year+row.end_dec_year)/2) 
+            )
+            
+            df.loc[i,"duration"] =  (row.end_dec_year - row.start_dec_year)*365*24*60*30 # in seconds
+
+        # use the geometry of slab2.0 to derive a depth for each event
+        slab = Slab("cam")
+        depth = slab.interpolate(
+            "depth", lat=df["lat"].to_numpy(), lon=df["lon"].to_numpy()
+        )
+        df["depth"] = depth / 1000  # convert to km
+        
+        return df
+
+class CostaRicaSlowSlipCatalog(SlowSlipCatalog):
+    def __init__(self):
+        self.name = "Costa Rica"
+        self.region = "Costa Rica"
+        self.dir_name = os.path.join(base_dir, "Datasets/Slow_slip_datasets/Costa_Rica/")
+
+        _combined = XieSlowSlipCatalog() + PerrySlowSlipCatalog()
+        self.catalog = _combined.catalog
+
+        super().__init__(self.catalog)
+
 class WilliamsSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.name = "New Zealand (Williams et al., in prep.)"
@@ -811,3 +904,6 @@ class OkadaAlaskaSlowSlipCatalog(SlowSlipCatalog):
         df["duration"] = df["dur"] * 24 * 60 * 60
 
         return df
+
+# %%
+
