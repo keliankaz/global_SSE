@@ -1,0 +1,39 @@
+"General Policy"
+"    Cite our paper indicated below (*1) when Users present their results using the data downloaded from this website in scientific papers, reports, or abstracts of meetings."
+"    Follow the individual policy for each catalog."
+"    Users owe any responsibility in using the data downloaded from this website."
+"    Catalogs on this website can be updated or modified (for example, due to the modification of the analyzing method) without any notification of Users."
+"    Specify the acknowledgement to "Science of Slow Earthquakes" (JSPS Grant-in-Aid for Scientific Research on Innovative Areas) as indicated below (*2)."
+"    We strictly prohibit any commercial use of the data provided in this website."
+"    Do not redistribute or share the data downloaded from this website."
+"    (*1) Kano, M., Aso, N., Matsuzawa, T., Ide, S., Annoura, S., Arai, R., Baba, S., Bostock, M., Chao, K., Heki, K., Itaba, S., Ito, Y., Kamaya, N., Maeda, T., Maury, J., Nakamura, M., Nishimura, T., Obana, K., Ohta, K., Poiata, N., Rousset, B., Sugioka, H., Takagi, R., Takahashi, T., Takeo, A., Tu, Y., Uchida, N., Yamashita, Y., & Obara, K. (2018). Development of a Slow Earthquake Database, Seismological Research Letters, 89 (4), 1566-1575, https://doi.org/10.1785/0220180021."
+"    (*2) Acknowledgments should be described in the following example:"
+"        This research was supported by JSPS KAKENHI Grant Number JP16H06472 in Scientific Research on Innovative Areas "Science of Slow Earthquakes"."
+"    If the research was conducted by the group members of our project, add each grant number of JSPS KAKENHI."
+"  "
+"Yano2022-SSE"
+"    Users cite the following paper when using the data downloaded from this website."
+"      Yano, K., & Kano, M. (2022). l1 trend filtering-based detection of short-term slow slip events: Application to a GNSS array in Southwest Japan. Journal of Geophysical Research: Solid Earth, 127, e2021JB023258. https://doi.org/10.1029/2021JB023258"
+"    Notices:"
+"      Covered period: from April 1, 2004 to June 11, 2006."
+"      We use the modes of estimated by kernel density estimation as the representative values of the MCMC samples."
+"      The MCMC samples are provided by the inquiry to the authors."
+"  "
+year,month,day,hour,min,sec,lat,lon,dep,mag,strike,dip,rake,length,width,slip,duration,catalog,ref,udate
+2004, 4,16,  ,  ,     ,32.57034,133.57948,  30.438,     ,229.9,     17.5,   128.2,  54, 36,  0.012,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2004, 5,19,  ,  ,     ,33.57868,133.24596,  32.092,     ,264.3,      0.1,    95.0,  63, 34,  0.012,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2004, 8, 3,  ,  ,     ,33.21123,132.76254,  60.948,     ,287.8,      0.2,   120.6,  64, 36,  0.012,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2004, 8,10,  ,  ,     ,33.35766,133.38712,  34.945,     ,259.4,      0.2,    89.9,  51, 29,  0.012,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2004, 9,27,  ,  ,     ,34.37077,133.05022,  52.005,     ,260.1,      0.2,    56.4,  37, 26,  0.012,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2004,10,25,  ,  ,     ,34.22692,133.45654,  75.312,     ,227.3,      0.1,    36.7,  87, 47,  0.013,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2004,12,21,  ,  ,     ,33.31600,132.34915,  54.792,     ,212.5,      0.2,   114.5,  58, 36,  0.012,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2004,12,26,  ,  ,     ,33.09622,133.99403,  35.862,     ,231.8,     21.4,    56.2,  47, 43,  0.012,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2005, 3, 7,  ,  ,     ,33.21245,131.82669,  47.345,     ,235.7,      0.2,   135.3,  57, 42,  0.012,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2005, 4, 7,  ,  ,     ,33.70408,132.85686,  54.375,     ,247.9,      0.1,   142.7,  47, 45,  0.013,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2005, 4,16,  ,  ,     ,33.97890,132.35403,  53.298,     ,244.6,      0.2,   103.9,  56, 39,  0.012,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2005, 5, 9,  ,  ,     ,33.76415,132.00386,  66.581,     ,243.6,      0.2,   112.7,  63, 47,  0.012,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2005, 9,10,  ,  ,     ,33.91595,132.96651,  39.815,     ,294.5,      0.2,   157.5,  52, 34,  0.011,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2005,12,31,  ,  ,     ,33.89844,132.93452,  63.002,     ,241.8,      0.2,   127.0,  57, 32,  0.013,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2006, 1,16,  ,  ,     ,32.69140,131.87759,  31.923,     ,282.0,     36.8,   240.6,  43, 32,  0.013,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2006, 4,10,  ,  ,     ,33.65204,132.92555,  35.547,     ,282.5,     35.5,   130.7,  45, 25,  0.012,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19
+2006, 5,30,  ,  ,     ,33.98057,133.58971,  32.725,     ,217.1,     17.8,    94.3,  56, 26,  0.013,            ,Yano2022-SSE,Yano and Kano (2022),2022-09-19

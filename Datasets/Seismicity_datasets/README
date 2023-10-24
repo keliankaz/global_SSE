@@ -1,0 +1,14 @@
+## Seismicity datasets
+
+### Japan trench datasets
+
+Noise classification for the unified earthquake catalog using ensemble learning: the enhanced image of seismic activity along the Japan Trench by the S-net seafloor network
+
+    File name:
+    est.csv
+
+    Header:
+    Rdatetime_est,lat_est,lon_est,dep_est,mag_est,hypoflag_est,dotime_est,dolat_est,dolon_est,dodep_est,std_ditp_est,std_dits_est,ppick_est,19_est,20_est,bothps_est,22_est,23_est,24_est,pspicknear_est,26_est,27_est,fname_est,event_idx_est,event_idx_man,datetime_man,lat_man,lon_man,dep_man,mag_man,dt,dlat,dlon,dho,ddep,dmag
+
+    Citation:
+    Tamaribuchi, K., Hirose, F., Noda, A. et al. Noise classification for the unified earthquake catalog using ensemble learning: the enhanced image of seismic activity along the Japan Trench by the S-net seafloor network. Earth Planets Space 73, 91 (2021). https://doi.org/10.1186/s40623-021-01411-6

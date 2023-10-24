@@ -1,0 +1,66 @@
+"General Policy"
+"    Cite our paper indicated below (*1) when Users present their results using the data downloaded from this website in scientific papers, reports, or abstracts of meetings."
+"    Follow the individual policy for each catalog."
+"    Users owe any responsibility in using the data downloaded from this website."
+"    Catalogs on this website can be updated or modified (for example, due to the modification of the analyzing method) without any notification of Users."
+"    Specify the acknowledgement to "Science of Slow Earthquakes" (JSPS Grant-in-Aid for Scientific Research on Innovative Areas) as indicated below (*2)."
+"    We strictly prohibit any commercial use of the data provided in this website."
+"    Do not redistribute or share the data downloaded from this website."
+"    (*1) Kano, M., Aso, N., Matsuzawa, T., Ide, S., Annoura, S., Arai, R., Baba, S., Bostock, M., Chao, K., Heki, K., Itaba, S., Ito, Y., Kamaya, N., Maeda, T., Maury, J., Nakamura, M., Nishimura, T., Obana, K., Ohta, K., Poiata, N., Rousset, B., Sugioka, H., Takagi, R., Takahashi, T., Takeo, A., Tu, Y., Uchida, N., Yamashita, Y., & Obara, K. (2018). Development of a Slow Earthquake Database, Seismological Research Letters, 89 (4), 1566-1575, https://doi.org/10.1785/0220180021."
+"    (*2) Acknowledgments should be described in the following example:"
+"        This research was supported by JSPS KAKENHI Grant Number JP16H06472 in Scientific Research on Innovative Areas "Science of Slow Earthquakes"."
+"    If the research was conducted by the group members of our project, add each grant number of JSPS KAKENHI."
+"  "
+"Nishimura2021c-SSE"
+"    Users cite the following paper when using the data downloaded from this website."
+"      Nishimura, T. (2021). Slow slip events in the Kanto and Tokai regions of central Japan detected using global navigation satellite system data during 1994–2020. Geochemistry, Geophysics, Geosystems, 22, e2020GC009329. https://doi.org/10.1029/2020GC009329."
+"    Notices:"
+"      Covered Period: from July 24, 1994 to November 23, 2019."
+"      The reference time indicates the centroid of the event."
+"  "
+year,month,day,hour,min,sec,lat,lon,dep,mag,strike,dip,rake,length,width,slip,duration,catalog,ref,udate
+1994,12, 1,  ,  ,     ,35.46600,138.72701,   7.400, 5.80,199.0,33.0, 59.0,  36, 40,  0.011,    86400.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+1995, 4,27,  ,  ,     ,35.16400,138.13300,  27.500, 6.10,242.0,19.0,128.0,  33, 58,  0.023,  3456000.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+1995, 8, 2,  ,  ,     ,34.91600,137.17400,  28.000, 6.17,289.0,14.0,169.0,  43, 46,  0.028,  1036800.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+1996, 4,23,  ,  ,     ,34.76600,137.33900,  24.800, 5.99,276.0,11.0,154.0,  42, 58,  0.013,  1209600.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+1996,10, 7,  ,  ,     ,35.41500,138.58800,  19.300, 5.79,214.0,24.0, 93.0,  42, 42,  0.009,  6134400.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+1997, 1,26,  ,  ,     ,35.31000,138.69099,   3.800, 5.63,191.0,35.0, 79.0,  39, 59,  0.004,  4320000.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+1997, 8,12,  ,  ,     ,34.77100,137.28900,  24.500, 6.00,282.0,13.0,125.0,  54, 42,  0.014,   691200.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+1998, 1,25,  ,  ,     ,34.47700,138.31200,  13.700, 5.76,246.0, 8.0, 95.0,  56, 51,  0.005,  6912000.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+1998,12,10,  ,  ,     ,34.80600,137.85600,  20.800, 5.91,262.0,18.0,114.0,  69, 56,  0.006,  5356800.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+1999, 9,11,  ,  ,     ,34.74700,137.23900,  24.000, 5.91,274.0,12.0,141.0,  46, 34,  0.014,  2678400.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+1999,11,23,  ,  ,     ,35.44000,138.47600,  26.800, 6.09,238.0,27.0, 88.0,  41, 77,  0.014,   345600.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2000, 9,19,  ,  ,     ,34.93500,137.46899,  28.200, 5.83,272.0,15.0,151.0,  14, 42,  0.029,        0.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2000,10,12,  ,  ,     ,35.80500,138.82401,  34.400, 6.16,236.0,44.0,119.0,  41, 41,  0.033,  4320000.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2001,11,30,  ,  ,     ,35.38600,138.56300,  16.900, 5.72,201.0,27.0, 82.0,  32, 26,  0.015,  6912000.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2001,12,27,  ,  ,     ,34.98900,137.67599,  28.700, 5.96,270.0,19.0, 97.0,  49, 43,  0.013,  6566400.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2002, 8,14,  ,  ,     ,34.74200,138.29100,  15.100, 5.75,241.0,14.0, 92.0,  59, 42,  0.005,  6912000.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2003, 2,13,  ,  ,     ,34.37400,137.88200,  14.700, 5.55,256.0, 7.0, 82.0,  35, 57,  0.003,    86400.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2003,10, 4,  ,  ,     ,34.92600,137.89799,  23.800, 5.84,252.0,18.0,116.0,  49, 28,  0.014,  6912000.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2004, 1, 5,  ,  ,     ,34.67400,137.49699,  21.100, 5.91,266.0,13.0,149.0,  55, 62,  0.007,   864000.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2004, 6,27,  ,  ,     ,34.80100,137.16600,  25.300, 5.92,280.0,12.0,167.0,  41, 30,  0.020,  1209600.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2004,12,17,  ,  ,     ,34.79500,137.34599,  25.200, 5.97,279.0,13.0,128.0,  43, 47,  0.014,  2678400.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2005, 7,21,  ,  ,     ,34.87300,137.50200,  26.300, 5.96,273.0,16.0,133.0,  41, 40,  0.016,    86400.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2005,12, 1,  ,  ,     ,34.91400,138.65500,  14.900, 5.71,235.0,12.0,105.0,  53, 64,  0.003,  3974400.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2006,11,18,  ,  ,     ,35.85100,138.78999,  39.000, 5.95,234.0,44.0, 98.0,  40, 35,  0.019,  2246400.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2007, 2,11,  ,  ,     ,34.82700,137.36400,  26.100, 5.99,280.0,14.0,143.0,  40, 49,  0.016,  2332800.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2007, 5,17,  ,  ,     ,35.33900,138.22501,  28.000, 5.95,239.0,28.0, 90.0,  40, 36,  0.018,  5184000.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2009, 8, 7,  ,  ,     ,34.68300,137.49200,  20.000, 5.66,256.0,13.0,118.0,  18,  9,  0.060,   259200.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2009,12,13,  ,  ,     ,35.51200,138.07100,  42.700, 5.88,256.0,41.0,102.0,  41, 39,  0.013,  2937600.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2010,11,16,  ,  ,     ,34.84000,137.33501,  26.800, 5.84,285.0,14.0,140.0,  43, 55,  0.008,   864000.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2011, 7,30,  ,  ,     ,34.90200,137.52499,  27.000, 5.96,272.0,16.0,136.0,  34, 40,  0.021,  4924800.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2011, 9,22,  ,  ,     ,35.47000,138.63499,  17.700, 5.75,207.0,25.0, 64.0,  40, 53,  0.006,   518400.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2012, 1, 8,  ,  ,     ,34.82700,138.16200,  19.000, 5.57,245.0,14.0,136.0,  29, 50,  0.005,  5011200.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2012, 6,16,  ,  ,     ,35.70600,138.60699,  35.800, 5.87,240.0,45.0, 97.0,  27, 37,  0.020,   691200.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2012,10, 4,  ,  ,     ,35.46100,138.69400,  10.200, 5.66,199.0,31.0, 66.0,  41, 40,  0.006,  2764800.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2013,11, 6,  ,  ,     ,35.41800,138.72400,  10.600, 5.75,212.0,29.0,101.0,  66, 38,  0.005,  3283200.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2014, 2, 6,  ,  ,     ,34.69000,137.70900,  20.800, 6.07,267.0,14.0,141.0,  58, 90,  0.008,  4924800.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2014,11,28,  ,  ,     ,35.39600,138.03300,  35.500, 6.00,243.0,31.0,102.0,  21, 23,  0.066,   691200.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2015, 4,14,  ,  ,     ,34.82000,137.44400,  25.700, 6.02,280.0,15.0,150.0,  49, 57,  0.012,  1728000.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2016,11, 4,  ,  ,     ,35.58900,138.11099,  47.300, 5.97,255.0,44.0,110.0,  38, 43,  0.018,  1382400.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2017, 2,11,  ,  ,     ,35.07800,137.96100,  28.500, 5.73,253.0,19.0,115.0,  28, 51,  0.009,    86400.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2017,12, 1,  ,  ,     ,34.81400,137.37000,  26.300, 6.10,283.0,13.0,134.0,  40, 61,  0.019,  1468800.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2018,12,18,  ,  ,     ,35.47800,138.55200,  18.300, 5.58,202.0,32.0, 96.0,  12, 29,  0.022,  3628800.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2019, 2, 4,  ,  ,     ,34.84500,137.31400,  26.500, 5.95,280.0,13.0,158.0,  32, 42,  0.020,  1728000.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+2019, 7,26,  ,  ,     ,34.70700,137.45700,  21.300, 5.81,267.0,15.0,139.0,  54, 37,  0.008,  3196800.00,Nishimura2021c-SSE,Nishimura (2021),2021-08-30
+
