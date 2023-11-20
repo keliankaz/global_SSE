@@ -55,9 +55,9 @@ class EarthquakeCatalog(Catalog):
     @staticmethod
     def _add_time_column(df, column):
         """
-        Adds a column to a dataframe with the time in days since the beginning of the year.
+        Adds a column to a dataframe.
         """
-        df[column] = pd.to_datetime(pd.to_datetime(df["time"], unit="d"))
+        df[column] = pd.to_datetime(df["time"], unit="d")
         return df
 
     @staticmethod
