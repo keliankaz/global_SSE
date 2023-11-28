@@ -1,6 +1,6 @@
 # %%
-
 from __future__ import annotations
+from typing import Tuple
 import pandas as pd
 from sklearn.neighbors import BallTree
 from sklearn.cluster import KMeans
