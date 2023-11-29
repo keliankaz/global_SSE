@@ -752,12 +752,12 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
     def __init__(self):
         self.name = "Cascadia"
         self.region = "Cascadia"
-        self.ref = "Michel et al. 2018"
+        self.ref = "Michel et al. 2019"
         self.dir_name = os.path.join(
             os.path.dirname(__file__),
             os.path.join(base_dir, "Datasets/Slow_slip_datasets/Cascadia"),
         )
-        self.file_name = "Michel2018.csv"
+        self.file_name = "Michel2019.csv"
 
         super().__init__(
             filename=os.path.join(self.dir_name, self.file_name),
@@ -805,7 +805,7 @@ class MichelSlowSlipCatalog(SlowSlipCatalog):
                 "mag",
                 "lat",
                 "lon",
-                "SSE_number_michel2018",
+                "SSE_number_michel2019",
                 "min_start",
                 "max_start",
                 "min_end",
