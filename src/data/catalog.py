@@ -704,6 +704,15 @@ class Catalog:
         Reads a catalog from a file and returns a dataframe.
         """
         raise NotImplementedError
+    
+    def to_csv(self,filename: str, columns: list = ["time", "mag", "lat", "lon"]):
+        """Writes catalog as csv 
+
+        Args:
+            filename: path and filename to save the csv file
+            columns: columns of the catalog data that should be saved to the csv file 
+        """
+        self.catalog.to_csv(filename, columns=columns, index=False)
 
 
 # %%
