@@ -304,7 +304,7 @@ class Catalog:
             metric="haversine",
         )
         if return_distances is True:
-            I, R = tree.query_radius(
+            is_in_radius, R = tree.query_radius(
                 np.deg2rad(self.catalog[["lat", "lon"]]),
                 r=buffer_radius_km / EARTH_RADIUS_KM,
                 return_distance=return_distances,
@@ -312,7 +312,7 @@ class Catalog:
 
             R *= EARTH_RADIUS_KM
 
-            OUTPUT = (I, R)
+            OUTPUT = (is_in_radius, R)
 
         else:
             OUTPUT = tree.query_radius(
@@ -328,10 +328,10 @@ class Catalog:
         column: Union[list, str],
         number_of_clusters: int,
     ) -> list[Catalog]:
-        if type(column) is str:
+        if isinstance(column, str):
             assert column in self.catalog.columns
             X = np.atleast_2d(self.catalog[column].values).T
-        elif type(column) is list:
+        elif isinstance(column, list):
             for col in column:
                 assert col in self.catalog.columns
             X = self.catalog[column].values
@@ -432,10 +432,10 @@ class Catalog:
         )
 
         if k_largest_events is not None:
-            I = np.argsort(self.catalog[column].values)[-k_largest_events:]
+            index_of_largest_events = np.argsort(self.catalog[column].values)[-k_largest_events:]
             ax.scatter(
-                self.catalog.time.values[I],
-                distance_along_section[I],
+                self.catalog.time.values[index_of_largest_events],
+                distance_along_section[index_of_largest_events],
                 **dict(kwargs, marker="*", s=60),
             )
 
@@ -523,10 +523,10 @@ class Catalog:
         )
 
         if k_largest_events is not None:
-            I = np.argsort(mag)[-k_largest_events:]
+            index_of_largest_events = np.argsort(mag)[-k_largest_events:]
             ax.scatter(
-                distance_along_section[I],
-                depth[I],
+                distance_along_section[index_of_largest_events],
+                depth[index_of_largest_events],
                 **dict(kwargs, marker="*", s=60),
             )
 
@@ -641,10 +641,10 @@ class Catalog:
         )
 
         if k_largest_events is not None:
-            I = np.argsort(self.catalog[column].to_numpy())[-k_largest_events:]
+            index_of_largest_events = np.argsort(self.catalog[column].to_numpy())[-k_largest_events:]
             ax.scatter(
-                self.catalog["lon"].values[I],
-                self.catalog["lat"].values[I],
+                self.catalog["lon"].values[index_of_largest_events],
+                self.catalog["lat"].values[index_of_largest_events],
                 **dict(scatter_kwarg, marker="*", s=60),
             )
 
