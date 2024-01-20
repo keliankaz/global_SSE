@@ -189,5 +189,20 @@ Observations of Laboratory and Natural Slow Slip Events: Hikurangi Subduction Zo
 
     Note: Large events are split into stage, many events do not have a specific centroid time (only the year is specified)
 
+### South America
 
+Detection of slow slip events along the southern Peru - northern Chile subduction zone
+
+    File name:
+    jara2023.csv
+
+    Header:
+        Event, Mw, Mw_error, Duration, Duration_error, Longitude, Latitude, Depth, Time, Aseismic_percent
+
+    Citation:
+    {
+        Jorge Jara, Romain Jolivet, Anne Socquet, et al. Detection of slow slip events along the southern Peru - northern Chile subduction zone. ESS Open Archive . May 04, 2023. DOI: 10.22541/essoar.168319853.39124142/v1
+    }
+
+    Note: Pre-print
 
