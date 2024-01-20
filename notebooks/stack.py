@@ -40,18 +40,18 @@ class Stack:
         regional_catalogs = None, 
         QUICK_RUN = False,                   # run sorter bootstap resampling runs
         EARTHQUAKE_MAGNITUDE_CUTOFF = 4.0,   # minimum earthquake magntitude
-        DEPTH_SUBSET = 'all',                
-        DURATION_SUBSET = 'all',
+        DEPTH_SUBSET = 'all',                # 'deep', 'shallow', 'all' - selected using k-means clustering
+        DURATION_SUBSET = 'all',             
         SLOWSLIP_MAGNITUDE_CUTOFF = 5.5,     # minimum slow slip event magntitude
-        DUPLICATE_RADIUS = 70,               # km
-        DUPLICATE_TIME = 40,                 # days
+        DUPLICATE_RADIUS = 70,               # km (for the removal duplicates)
+        DUPLICATE_TIME = 40,                 # days (for the removal duplicates)
         TIME_WINDOW = 15,                    # source durations (e.g. 7 background, 1 coshocks, 7 aftershock)
         SMOOTHING_BW_SOURCE_DURATION = 0.25, # source durations 
         SPACE_WINDOW_BIG = 2000,             # km for spatial stack
         DISTANCE_TO_SLAB = 20,               # km (slab perpendicular distance to Slab 2.0 model for windows)
         IMPUTE_DURATION = True,              # add durations based on best fit to magnitude/duration scaling
         REPRESENTATIVE_SSE_SIZE = 50,        # km for temporal stack
-        NEARBY_EQ_DISTANCE = 20,
+        NEARBY_EQ_DISTANCE = 20,             # distance threshold to select earthquakes that are 'near' slow slip events
     ) -> None:
         
         self.QUICK_RUN = QUICK_RUN
@@ -92,9 +92,11 @@ class Stack:
         self.local_earthquakes = EarthquakeCatalog(local_earthquakes.catalog.loc[distance_to_slab < self.DISTANCE_TO_SLAB])
         
         # depends on previous config and catalogs
-        self.times_by_window, _, self.time_weights_by_window = self.get_windows()
-        self.times, self.time_weights = [
-            np.concatenate(list_of_arrays) for list_of_arrays in [self.times_by_window, self.time_weights_by_window]
+        self.times_by_window, _, self.time_weights_by_window, self.indicies_by_window = self.get_windows()
+        self.times, self.time_weights, self.indices = [
+            np.concatenate(list_of_arrays) for list_of_arrays in [
+                self.times_by_window, self.time_weights_by_window, self.indicies_by_window
+            ]
         ]
         
 
@@ -195,7 +197,7 @@ class Stack:
         lag=0,
         slab_model=self.slab,
         concatenate_output= False,
-        return_indices = False,
+        return_indices = True,
         use_durations = True,
         use_dimensions = True,
     )
