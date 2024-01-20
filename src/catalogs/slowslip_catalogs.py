@@ -131,25 +131,13 @@ class RoussetSlowSlipCatalog(SlowSlipCatalog):
         super().__init__(self.catalog)
 
     @staticmethod
-    def _deciyear_to_datetime(deciyear):
-        """
-        Converts decimal year to datetime.
-        """
-        year = int(deciyear)
-        rem = deciyear - year
-        base = datetime(year, 1, 1)
-        result = base + timedelta(
-            seconds=(base.replace(year=base.year + 1) - base).total_seconds() * rem
-        )
-        return result
-
-    def _add_time_column(self, df, column):
+    def _add_time_column(df, column):
         """
         Adds a column to a dataframe with date converted from deciyear.
         """
 
         for i, row in df.iterrows():
-            df.loc[i, column] = self._deciyear_to_datetime(row["date"])
+            df.loc[i, column] = _deciyear_to_datetime(row["date"])
 
         return df
 
@@ -947,5 +935,73 @@ class OkadaAlaskaSlowSlipCatalog(SlowSlipCatalog):
 
         return df
 
+
+class JaraSlowSlipCatalog(SlowSlipCatalog):
+    def __init__(self):
+        self.name = "Jara et al., 2023"
+        self.region = "Central Andes"
+        self.ref = "Jara et al., 2023"
+        self.dir_name = os.path.join(base_dir, "Datasets/Slow_slip_datasets/South_America/")
+        self.file_name = "jara2023.txt"
+        _catalog = self.read_catalog(self.dir_name, self.file_name)
+
+        self.catalog = _catalog
+
+        super().__init__(self.catalog)
+        
+        self.catalog["ref"] = self.ref
+        
+    @staticmethod
+    def _deciyear_to_datetime(deciyear):
+        """
+        Converts decimal year to datetime.
+        """
+        year = int(deciyear)
+        rem = deciyear - year
+        base = datetime(year, 1, 1)
+        result = base + timedelta(
+            seconds=(base.replace(year=base.year + 1) - base).total_seconds() * rem
+        )
+        return result
+
+    def read_catalog(self, dir_name, file_name):
+        """
+        Reads in a catalog of slow slip events in Mexico and returns a pandas dataframe. Read each file in
+        Datasets/Slow_slip_datasets/Mexico/ directory and concatenate them into one dataframe.
+        """
+        full_dir_name = os.path.join(os.path.dirname(__file__), dir_name)
+        df = pd.read_csv(
+            os.path.join(full_dir_name, file_name),
+            sep=",",
+            skiprows=1,
+            index_col=False,
+            names=[
+                "Event",
+                "Mw",
+                "Mw_error",
+                "Duration",
+                "Duration_error",
+                "Longitude",
+                "Latitude",
+                "Depth",
+                "Time",
+                "Aseismic_percent",
+            ],
+        )
+
+        df["duration"] = df.Duration * 24 * 60 * 60  # convert from days to seconds
+        df["lat"] = df.Latitude
+        df["lon"] = df.Longitude
+        df["depth"] = df.Depth
+        df["mag"] = df.Mw
+
+        # add time column
+        for i, row in df.iterrows():
+            df.loc[i, 'time'] = _deciyear_to_datetime(row["Time"])
+
+        return df
+    
 # %%
+
+
 
