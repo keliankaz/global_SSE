@@ -1,3 +1,4 @@
+name: sse
 channels:
   - conda-forge
 dependencies:
